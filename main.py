@@ -112,12 +112,7 @@ class LeavingRoutine:
 
     def door_open_announce(self):
         logger.info('Door open, announcing...')
-        # try:
-        #     self.world.get_thing_by_name('Sonos')\
-        #             .play_announcement('http://bati.casa/webapp/win95.mp3', force=['GroundFloor'])
-        # except Exception as ex:
-        #     logger.error("Failed to play sonos announcement: " + str(ex))
-
+        self.world.get_thing('Sonos').play_announcement('http://bati.casa/web_assets/win95.mp3')
 
 class App:
     def __init__(self, cfg):
@@ -223,8 +218,8 @@ class App:
             else:
                 self.leaving_routine.door_open_announce()
                 if not light_outside(MY_LATLON):
-                    self.leaving_routine.trigger_leaving_routine()
                     logger.info('Puerta de entrada abierta, trigger leaving routine')
+                    self.leaving_routine.trigger_leaving_routine()
                 else:
                     logger.info('Puerta de entrada abierta')
         self.zmw.registry.get_thing('SensorPuertaEntrada')\
