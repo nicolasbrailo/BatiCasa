@@ -1,3 +1,8 @@
+zigbee2mqtt2web_ui/build/
+sensors.sqlite
+config.json
+config.spotify_cache.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
