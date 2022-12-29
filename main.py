@@ -17,6 +17,8 @@ from zigbee2mqtt2web_extras.sonos import Sonos
 from zigbee2mqtt2web_extras.motion_sensors import MultiMotionSensor
 from zigbee2mqtt2web_extras.motion_sensors import MotionActivatedNightLight
 from zigbee2mqtt2web_extras.geo_helper import light_outside
+from zigbee2mqtt2web_extras.light_helpers import any_light_on_in_the_house
+from zigbee2mqtt2web_extras.light_helpers import light_group_toggle_brightness_pct
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -36,31 +38,6 @@ logger = logging.getLogger(__name__)
 # TODO: On new network announcement, try to merge old state
 
 MY_LATLON=(51.5464371,0.111148)
-
-def any_light_on(registry, light_names):
-    for name in light_names:
-        if registry.get_thing(name).is_light_on():
-            return True
-    return False
-
-def any_light_on_in_the_house(registry):
-    for name in registry.get_thing_names_of_type('light'):
-        if registry.get_thing(name).is_light_on():
-            return True
-    return False
-
-def light_group_toggle_brightness_pct(registry, light_group):
-    light_names = [name for name,_ in light_group]
-    if any_light_on(registry, light_names):
-        for name,_ in light_group:
-            logger.error("OFF " + name)
-            registry.get_thing(name).turn_off()
-    else:
-        for name,brightness in light_group:
-            logger.error("ON " + name)
-            registry.get_thing(name).set_brightness_pct(brightness)
-
-    registry.broadcast_things(light_names)
 
 
 class Cronenberg:
@@ -110,7 +87,7 @@ class LeavingRoutine:
         self._bg.remove()
         self._scheduler = None
 
-    def door_open_announce(self):
+    def door_open_announce_and_block(self):
         logger.info('Door open, announcing...')
         self.world.get_thing('Sonos').play_announcement('http://bati.casa/web_assets/win95.mp3')
 
@@ -133,100 +110,100 @@ class App:
         if self.first_discovery_done:
             return
         self.register_custom_things()
-        self.register_custom_behaviour()
+        self.register_custom_behaviour(self.zmw.registry)
         self.register_sensors()
         self.register_scenes()
         self.first_discovery_done = True
 
-    def register_custom_behaviour(self):
+    def register_custom_behaviour(self, registry):
         #######################################################################
         def boton_comedor_pressed(action):
             if action == 'on_press':
-                light_group_toggle_brightness_pct(self.zmw.registry, [
+                light_group_toggle_brightness_pct(registry, [
                         ('Snoopy', 50),
                         ('Comedor', 60),
                     ]);
             if action == 'on_hold':
-                light_group_toggle_brightness_pct(self.zmw.registry, [
+                light_group_toggle_brightness_pct(registry, [
                         ('Snoopy', 100),
                         ('Comedor', 100),
                     ]);
             if action == 'off_press':
-                self.zmw.registry.get_thing('CocinaCountertop').set_brightness_pct(100)
-                self.zmw.registry.get_thing('LandingPB').set_brightness_pct(50)
-                self.zmw.registry.broadcast_things(['CocinaCountertop', 'LandingPB'])
+                registry.get_thing('CocinaCountertop').set_brightness_pct(100)
+                registry.get_thing('LandingPB').set_brightness_pct(50)
+                registry.broadcast_things(['CocinaCountertop', 'LandingPB'])
 
-        self.zmw.registry.get_thing('BotonComedor')\
+        registry.get_thing('BotonComedor')\
             .actions['action'].value.on_change_from_mqtt = boton_comedor_pressed
         #######################################################################
         def batipieza_boton_pressed(action):
             if action == 'on':
-                light_group_toggle_brightness_pct(self.zmw.registry, [
+                light_group_toggle_brightness_pct(registry, [
                         ('Belador', 30),
                         ('NicoVelador', 25),
                     ]);
             if action == 'off':
-                lamp = self.zmw.registry.get_thing('EscaleraP1')
+                lamp = registry.get_thing('EscaleraP1')
                 lamp.set_brightness_pct(25)
-                self.zmw.registry.broadcast_thing(lamp)
+                registry.broadcast_thing(lamp)
 
-        self.zmw.registry.get_thing('BatipiezaBoton')\
+        registry.get_thing('BatipiezaBoton')\
             .actions['action'].value.on_change_from_mqtt = batipieza_boton_pressed
         #######################################################################
         def belador_boton_pressed(press):
-            if any_light_on_in_the_house(self.zmw.registry):
+            if any_light_on_in_the_house(registry):
                 time.sleep(2)
-                self.zmw.registry.get_thing('SceneManager').actions['World off'].apply_scene()
+                registry.get_thing('SceneManager').actions['World off'].apply_scene()
             else:
-                lamp = self.zmw.registry.get_thing('Belador')
+                lamp = registry.get_thing('Belador')
                 lamp.set_brightness_pct(10)
-                self.zmw.registry.broadcast_thing(lamp)
+                registry.broadcast_thing(lamp)
 
-        self.zmw.registry.get_thing('BeladorBoton')\
+        registry.get_thing('BeladorBoton')\
             .actions['action'].value.on_change_from_mqtt = belador_boton_pressed
         #######################################################################
         def boton_cocina_pressed(action):
             if action == 'on':
-                light_group_toggle_brightness_pct(self.zmw.registry, [
+                light_group_toggle_brightness_pct(registry, [
                         ('CocinaCeiling', 100),
                     ]);
             if action == 'off':
-                light_group_toggle_brightness_pct(self.zmw.registry, [
+                light_group_toggle_brightness_pct(registry, [
                         ('CocinaCountertop', 100),
                         ('LandingPB', 30),
                     ]);
 
-        self.zmw.registry.get_thing('BotonCocina')\
+        registry.get_thing('BotonCocina')\
             .actions['action'].value.on_change_from_mqtt = boton_cocina_pressed
         #######################################################################
         def boton_entrada_pressed(action):
             if action == 'toggle':
                 self.leaving_routine.trigger_leaving_routine()
             if action == 'brightness_up_click':
-                self.zmw.registry.get_thing('SceneManager').actions['Comedor tarde'].apply_scene()
+                registry.get_thing('SceneManager').actions['Comedor tarde'].apply_scene()
             if action == 'brightness_down_click':
-                self.zmw.registry.get_thing('SceneManager').actions['World off'].apply_scene(all_except=['ComedorII', 'LandingPB'])
+                registry.get_thing('SceneManager').actions['World off'].apply_scene(all_except=['ComedorII', 'LandingPB'])
             if action == 'toggle_hold':
-                self.zmw.registry.get_thing('SceneManager').actions['World off'].apply_scene()
+                registry.get_thing('SceneManager').actions['World off'].apply_scene()
 
-        self.zmw.registry.get_thing('BotonEntrada')\
+        registry.get_thing('BotonEntrada')\
             .actions['action'].value.on_change_from_mqtt = boton_entrada_pressed
         #######################################################################
         def on_report_sensor_puerta_entrada(has_contact):
             if has_contact:
                 logger.info('Puerta de entrada cerrada')
             else:
-                self.leaving_routine.door_open_announce()
                 if not light_outside(MY_LATLON):
                     logger.info('Puerta de entrada abierta, trigger leaving routine')
                     self.leaving_routine.trigger_leaving_routine()
                 else:
                     logger.info('Puerta de entrada abierta')
-        self.zmw.registry.get_thing('SensorPuertaEntrada')\
+                self.leaving_routine.door_open_announce_and_block()
+        registry.get_thing('SensorPuertaEntrada')\
             .actions['contact'].value.on_change_from_mqtt = on_report_sensor_puerta_entrada
         #######################################################################
-        motion_sensor = MultiMotionSensor(self.zmw.registry, ['SensorEscaleraPB1', 'SensorEscaleraPB2'])
-        self.foo = MotionActivatedNightLight(self.zmw.registry, motion_sensor, self.zmw.registry.get_thing('EscaleraPBLight'), MY_LATLON)
+        motion_sensor = MultiMotionSensor(registry, ['SensorEscaleraPB1', 'SensorEscaleraPB2'])
+        self.foo = MotionActivatedNightLight(registry, motion_sensor, registry.get_thing('EscaleraPBLight'), MY_LATLON)
 
 
 
@@ -298,7 +275,10 @@ class App:
                 'LandingPB', 'ComedorII', 'NicoVelador', 'Belador'])
         scenes.add_scene('Dormir', 'Luces bajas en toda la casa', dormir)
 
-        scenes.add_scene('Olivia', 'Olivia come', lambda: True)
+        def olivia_come():
+            self.zmw.registry.get_thing('Sonos').play_announcement('http://bati.casa/web_assets/oliviacome.mp3')
+
+        scenes.add_scene('Olivia', 'Olivia come', olivia_come)
 
         self.zmw.registry.register(scenes)
 
