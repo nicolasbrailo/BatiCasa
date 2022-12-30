@@ -202,8 +202,8 @@ class App:
         registry.get_thing('SensorPuertaEntrada')\
             .actions['contact'].value.on_change_from_mqtt = on_report_sensor_puerta_entrada
         #######################################################################
-        motion_sensor = MultiMotionSensor(registry, ['SensorEscaleraPB1', 'SensorEscaleraPB2'])
-        self.foo = MotionActivatedNightLight(registry, motion_sensor, registry.get_thing('EscaleraPBLight'), MY_LATLON)
+        self.foo = MotionActivatedNightLight(registry, ['SensorEscaleraPB1', 'SensorEscaleraPB2'], 'EscaleraPBLight', MY_LATLON)
+        self.bar = MotionActivatedNightLight(registry, ['SensorEscaleraP1P2'], 'EscaleraP1', MY_LATLON)
 
 
 
