@@ -7,18 +7,18 @@ import sys
 import time
 import datetime
 
-from zigbee2mqtt2web import MultiMqttThing
 from zigbee2mqtt2web import Zigbee2Mqtt2Web
-from zigbee2mqtt2web_extras.monkeypatching import add_all_known_monkeypatches
-from zigbee2mqtt2web_extras.scenes import SceneManager
-from zigbee2mqtt2web_extras.sensor_history import SensorsHistory
-from zigbee2mqtt2web_extras.spotify import Spotify
-from zigbee2mqtt2web_extras.sonos import Sonos
-from zigbee2mqtt2web_extras.motion_sensors import MultiMotionSensor
-from zigbee2mqtt2web_extras.motion_sensors import MotionActivatedNightLight
 from zigbee2mqtt2web_extras.geo_helper import light_outside
 from zigbee2mqtt2web_extras.light_helpers import any_light_on_in_the_house
 from zigbee2mqtt2web_extras.light_helpers import light_group_toggle_brightness_pct
+from zigbee2mqtt2web_extras.monkeypatching import add_all_known_monkeypatches
+from zigbee2mqtt2web_extras.motion_sensors import MotionActivatedNightLight
+from zigbee2mqtt2web_extras.motion_sensors import MultiMotionSensor
+from zigbee2mqtt2web_extras.multi_mqtt_thing import MultiMqttThing
+from zigbee2mqtt2web_extras.scenes import SceneManager
+from zigbee2mqtt2web_extras.sensor_history import SensorsHistory
+from zigbee2mqtt2web_extras.sonos import Sonos
+from zigbee2mqtt2web_extras.spotify import Spotify
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -123,37 +123,29 @@ class App:
         #######################################################################
         def boton_comedor_pressed(action):
             if action == 'on_press':
-                on = light_group_toggle_brightness_pct(registry, [
-                        ('Snoopy', 80),
-                        ('Comedor', 100),
-                    ]);
-                if on:
-                    self.zmw.registry.get_thing('Comedor').set('color_rgb', 'FFF')
-                    registry.broadcast_thing('Comedor')
-            if action == 'up_press':
-                on = light_group_toggle_brightness_pct(registry, [
-                        ('Snoopy', 40),
-                        ('Comedor', 60),
-                    ]);
-                if on:
-                    self.zmw.registry.get_thing('Comedor').set('color_rgb', 'FA6')
-                    registry.broadcast_thing('Comedor')
-            if action == 'down_press':
-                on = light_group_toggle_brightness_pct(registry, [
-                        ('Snoopy', 15),
-                        ('Comedor', 20),
-                    ]);
-                if on:
-                    self.zmw.registry.get_thing('Comedor').set('color_rgb', 'F84')
-                    registry.broadcast_thing('Comedor')
-            if action == 'off_press':
-                on = light_group_toggle_brightness_pct(registry, [
-                        ('Snoopy', 5),
-                        ('Comedor', 10),
-                    ]);
-                if on:
-                    self.zmw.registry.get_thing('Comedor').set('color_rgb', 'F42')
-                    registry.broadcast_thing('Comedor')
+                registry.get_thing('Snoopy').set_brightness_pct(80)
+                registry.get_thing('Comedor').set_brightness_pct(100)
+                registry.get_thing('Comedor').set('color_rgb', 'FFF')
+                registry.broadcast_things(['Snoopy', 'Comedor'])
+            elif action == 'up_press':
+                registry.get_thing('Snoopy').set_brightness_pct(40)
+                registry.get_thing('Comedor').set_brightness_pct(60)
+                registry.get_thing('Comedor').set('color_rgb', 'FA6')
+                registry.broadcast_things(['Snoopy', 'Comedor'])
+            elif action == 'down_press':
+                registry.get_thing('Snoopy').set_brightness_pct(15)
+                registry.get_thing('Comedor').set_brightness_pct(20)
+                registry.get_thing('Comedor').set('color_rgb', 'F84')
+                registry.broadcast_things(['Snoopy', 'Comedor'])
+            elif action == 'off_press':
+                registry.get_thing('Snoopy').set_brightness_pct(5)
+                registry.get_thing('Comedor').set_brightness_pct(10)
+                registry.get_thing('Comedor').set('color_rgb', 'F42')
+                registry.broadcast_things(['Snoopy', 'Comedor'])
+            elif action[-5:] == '_hold':
+                registry.get_thing('Snoopy').turn_off()
+                registry.get_thing('Comedor').turn_off()
+                registry.broadcast_things(['Snoopy', 'Comedor'])
 
         registry.get_thing('BotonComedor')\
             .actions['action'].value.on_change_from_mqtt = boton_comedor_pressed
@@ -226,6 +218,7 @@ class App:
         #######################################################################
         self.foo = MotionActivatedNightLight(registry, ['SensorEscaleraPB1', 'SensorEscaleraPB2'], 'EscaleraPBLight', MY_LATLON)
         self.bar = MotionActivatedNightLight(registry, ['SensorEscaleraP1P2'], 'EscaleraP1', MY_LATLON)
+        self.bar.configure('off_during_late_night', True)
 
 
     def register_custom_things(self):
