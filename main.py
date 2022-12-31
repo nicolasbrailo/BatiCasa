@@ -33,6 +33,7 @@ root.addHandler(handler)
 import logging
 logger = logging.getLogger(__name__)
 
+# TODO: Make motion sensor and sensor history safe to thing re-registration
 # TODO: Add broadcast transition time
 # TODO: UI for unknown/broken/hidden/button things
 # TODO: On new network announcement, try to merge old state
@@ -96,7 +97,7 @@ class App:
         self._cfg = cfg
         self.first_discovery_done = False
         self.zmw = Zigbee2Mqtt2Web(cfg)
-        self.zmw.registry.on_mqtt_network_discovered(self.on_first_net_discovery)
+        self.zmw.registry.on_mqtt_network_discovered(self.on_net_discovery)
         add_all_known_monkeypatches(self.zmw)
         self.sensors = SensorsHistory(cfg['sensor_db_path'], cfg['sensor_db_retention_rows'])
         self.cron = Cronenberg(self.zmw.registry)
@@ -106,12 +107,15 @@ class App:
         self.zmw.start_and_block()
         self.zmw.stop()
 
-    def on_first_net_discovery(self):
-        if self.first_discovery_done:
-            return
-        self.register_custom_things()
+    def on_net_discovery(self):
         self.register_custom_behaviour(self.zmw.registry)
         self.register_sensors()
+
+        if self.first_discovery_done:
+            return
+
+        self.sensors.register_to_webserver(self.zmw.webserver)
+        self.register_custom_things()
         self.register_scenes()
         self.first_discovery_done = True
 
@@ -119,19 +123,37 @@ class App:
         #######################################################################
         def boton_comedor_pressed(action):
             if action == 'on_press':
-                light_group_toggle_brightness_pct(registry, [
-                        ('Snoopy', 50),
-                        ('Comedor', 60),
-                    ]);
-            if action == 'on_hold':
-                light_group_toggle_brightness_pct(registry, [
-                        ('Snoopy', 100),
+                on = light_group_toggle_brightness_pct(registry, [
+                        ('Snoopy', 80),
                         ('Comedor', 100),
                     ]);
+                if on:
+                    self.zmw.registry.get_thing('Comedor').set('color_rgb', 'FFF')
+                    registry.broadcast_thing('Comedor')
+            if action == 'up_press':
+                on = light_group_toggle_brightness_pct(registry, [
+                        ('Snoopy', 40),
+                        ('Comedor', 60),
+                    ]);
+                if on:
+                    self.zmw.registry.get_thing('Comedor').set('color_rgb', 'FA6')
+                    registry.broadcast_thing('Comedor')
+            if action == 'down_press':
+                on = light_group_toggle_brightness_pct(registry, [
+                        ('Snoopy', 15),
+                        ('Comedor', 20),
+                    ]);
+                if on:
+                    self.zmw.registry.get_thing('Comedor').set('color_rgb', 'F84')
+                    registry.broadcast_thing('Comedor')
             if action == 'off_press':
-                registry.get_thing('CocinaCountertop').set_brightness_pct(100)
-                registry.get_thing('LandingPB').set_brightness_pct(50)
-                registry.broadcast_things(['CocinaCountertop', 'LandingPB'])
+                on = light_group_toggle_brightness_pct(registry, [
+                        ('Snoopy', 5),
+                        ('Comedor', 10),
+                    ]);
+                if on:
+                    self.zmw.registry.get_thing('Comedor').set('color_rgb', 'F42')
+                    registry.broadcast_thing('Comedor')
 
         registry.get_thing('BotonComedor')\
             .actions['action'].value.on_change_from_mqtt = boton_comedor_pressed
@@ -206,18 +228,13 @@ class App:
         self.bar = MotionActivatedNightLight(registry, ['SensorEscaleraP1P2'], 'EscaleraP1', MY_LATLON)
 
 
-
     def register_custom_things(self):
         self.zmw.registry.register_and_shadow_mqtt_thing(
-            MultiMqttThing('Comedor', [\
-               self.zmw.registry.get_thing('ComedorL'),\
-               self.zmw.registry.get_thing('ComedorR')])
+            MultiMqttThing(self.zmw.registry, 'Comedor', ['ComedorL', 'ComedorR'])
         )
 
         self.zmw.registry.register_and_shadow_mqtt_thing(
-            MultiMqttThing('CocinaCountertop', [\
-               self.zmw.registry.get_thing('CocinaCountertop1'),\
-               self.zmw.registry.get_thing('CocinaCountertop2')])
+            MultiMqttThing(self.zmw.registry, 'CocinaCountertop', ['CocinaCountertop1', 'CocinaCountertop2'])
         )
 
         if 'spotify' in self._cfg:
@@ -229,7 +246,6 @@ class App:
             self.zmw.registry.register(Sonos(self._cfg['sonos']))
 
     def register_sensors(self):
-        self.sensors.register_to_webserver(self.zmw.webserver)
         register = lambda sensor_name, metrics: \
             self.sensors.register_sensor(
                     self.zmw.registry.get_thing(sensor_name),
