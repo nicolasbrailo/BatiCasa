@@ -34,7 +34,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 # TODO: Make motion sensor and sensor history safe to thing re-registration
-# TODO: Add broadcast transition time
 # TODO: UI for unknown/broken/hidden/button things
 # TODO: On new network announcement, try to merge old state
 
@@ -126,26 +125,25 @@ class App:
                 registry.get_thing('Snoopy').set_brightness_pct(80)
                 registry.get_thing('Comedor').set_brightness_pct(100)
                 registry.get_thing('Comedor').set('color_rgb', 'FFF')
-                registry.broadcast_things(['Snoopy', 'Comedor'])
             elif action == 'up_press':
                 registry.get_thing('Snoopy').set_brightness_pct(40)
                 registry.get_thing('Comedor').set_brightness_pct(60)
                 registry.get_thing('Comedor').set('color_rgb', 'FA6')
-                registry.broadcast_things(['Snoopy', 'Comedor'])
             elif action == 'down_press':
                 registry.get_thing('Snoopy').set_brightness_pct(15)
                 registry.get_thing('Comedor').set_brightness_pct(20)
                 registry.get_thing('Comedor').set('color_rgb', 'F84')
-                registry.broadcast_things(['Snoopy', 'Comedor'])
             elif action == 'off_press':
                 registry.get_thing('Snoopy').set_brightness_pct(5)
                 registry.get_thing('Comedor').set_brightness_pct(10)
                 registry.get_thing('Comedor').set('color_rgb', 'F42')
-                registry.broadcast_things(['Snoopy', 'Comedor'])
             elif action[-5:] == '_hold':
                 registry.get_thing('Snoopy').turn_off()
                 registry.get_thing('Comedor').turn_off()
-                registry.broadcast_things(['Snoopy', 'Comedor'])
+
+            registry.get_thing('Comedor').set('transition', 3)
+            registry.get_thing('Snoopy').set('transition', 3)
+            registry.broadcast_things(['Snoopy', 'Comedor'])
 
         registry.get_thing('BotonComedor')\
             .actions['action'].value.on_change_from_mqtt = boton_comedor_pressed
@@ -286,7 +284,6 @@ class App:
 
         def olivia_come():
             self.zmw.registry.get_thing('Sonos').play_announcement('http://bati.casa/web_assets/oliviacome.mp3')
-
         scenes.add_scene('Olivia', 'Olivia come', olivia_come)
 
         self.zmw.registry.register(scenes)
