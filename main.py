@@ -258,6 +258,8 @@ class App:
             self.zmw.registry.get_thing('Comedor').set('color_rgb', 'FFFFFF')
             self.zmw.registry.get_thing('Comedor').set_brightness_pct(100)
             self.zmw.registry.get_thing('Snoopy').set_brightness_pct(100)
+            self.zmw.registry.get_thing('Comedor').set('transition', 3)
+            self.zmw.registry.get_thing('Snoopy').set('transition', 3)
             self.zmw.registry.broadcast_things(['Comedor', 'Snoopy'])
         scenes.add_scene('Comedor dia', 'Luces altas, comedor', comedor_dia)
 
@@ -266,6 +268,9 @@ class App:
             self.zmw.registry.get_thing('Comedor').set_brightness_pct(60)
             self.zmw.registry.get_thing('Snoopy').set_brightness_pct(60)
             self.zmw.registry.get_thing('EscaleraP1').set_brightness_pct(15)
+            self.zmw.registry.get_thing('Comedor').set('transition', 3)
+            self.zmw.registry.get_thing('Snoopy').set('transition', 3)
+            self.zmw.registry.get_thing('EscaleraP1').set('transition', 3)
             self.zmw.registry.broadcast_things(['Comedor', 'Snoopy', 'EscaleraP1'])
         scenes.add_scene('Comedor tarde', 'Comedor, luces medias', comedor_tarde)
 
@@ -280,6 +285,9 @@ class App:
             self.zmw.registry.get_thing('ComedorII').turn_off()
             self.zmw.registry.get_thing('NicoVelador').set_brightness_pct(5)
             self.zmw.registry.get_thing('Belador').set_brightness_pct(5)
+            self.zmw.registry.get_thing('Comedor').set('transition', 3)
+            self.zmw.registry.get_thing('Snoopy').set('transition', 3)
+            self.zmw.registry.get_thing('EscaleraP1').set('transition', 3)
             self.zmw.registry.broadcast_things([
                 'Comedor', 'Snoopy', 'EscaleraP1', 'CocinaCountertop', 'CocinaCeiling',
                 'LandingPB', 'ComedorII', 'NicoVelador', 'Belador'])
