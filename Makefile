@@ -9,6 +9,9 @@ restart_and_tail_logs:
 tail_logs:
 	journalctl -fu BatiCasa
 
+tail_logs_with_zigbee2mqtt:
+	journalctl -f -u BatiCasa -u zigbee2mqtt
+
 install:
 	python3 -m pipenv install requests
 	# If Redis is missing, it's because it tends to fail when installing spotipy. Try this:
