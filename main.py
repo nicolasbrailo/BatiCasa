@@ -140,6 +140,9 @@ class App:
             elif action[-5:] == '_hold':
                 registry.get_thing('Snoopy').turn_off()
                 registry.get_thing('Comedor').turn_off()
+            else:
+                # Return early on unknown action, to avoid a spurious bcast
+                return
 
             registry.get_thing('Comedor').set('transition', 3)
             registry.get_thing('Snoopy').set('transition', 3)
