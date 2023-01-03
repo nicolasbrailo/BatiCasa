@@ -165,7 +165,9 @@ class App:
         registry.get_thing('BatipiezaBoton')\
             .actions['action'].value.on_change_from_mqtt = batipieza_boton_pressed
         #######################################################################
-        def belador_boton_pressed(press):
+        def belador_boton_pressed(action):
+            if action != 'press':
+                return
             if any_light_on_in_the_house(registry):
                 time.sleep(2)
                 registry.get_thing('SceneManager').actions['World off'].apply_scene()
