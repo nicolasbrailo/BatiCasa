@@ -8,7 +8,7 @@ import time
 import datetime
 
 from zigbee2mqtt2web import Zigbee2Mqtt2Web
-from zigbee2mqtt2web_extras.geo_helper import light_outside
+from zigbee2mqtt2web_extras.utils.geo_helper import light_outside
 from zigbee2mqtt2web_extras.light_helpers import any_light_on_in_the_house
 from zigbee2mqtt2web_extras.light_helpers import light_group_toggle_brightness_pct
 from zigbee2mqtt2web_extras.monkeypatching import add_all_known_monkeypatches
@@ -36,7 +36,6 @@ logger = logging.getLogger(__name__)
 # TODO: Make sensor history safe to thing re-registration
 # TODO: UI for unknown/broken/hidden/button things
 # TODO: On new network announcement, try to merge old state
-# TODO: Sensor history by date, not by row num
 
 MY_LATLON=(51.5464371,0.111148)
 
@@ -99,7 +98,9 @@ class App:
         self.zmw = Zigbee2Mqtt2Web(cfg)
         self.zmw.registry.on_mqtt_network_discovered(self.on_net_discovery)
         add_all_known_monkeypatches(self.zmw)
-        self.sensors = SensorsHistory(cfg['sensor_db_path'], cfg['sensor_db_retention_rows'])
+        retention_rows = cfg['sensor_db_retention_rows'] if 'sensor_db_retention_rows' in cfg else None
+        retention_days = cfg['sensor_db_retention_days'] if 'sensor_db_retention_days' in cfg else None
+        self.sensors = SensorsHistory(cfg['sensor_db_path'], retention_rows, retention_days)
         self.cron = Cronenberg(self.zmw.registry)
         self.leaving_routine = LeavingRoutine(self.zmw.registry)
 

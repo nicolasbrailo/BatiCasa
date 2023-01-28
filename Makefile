@@ -3,6 +3,9 @@
 run:
 	/usr/bin/authbind --deep python3 -m pipenv run python ./main.py | tee run.log
 
+shell:
+	python3 -m pipenv run python
+
 restart_and_tail_logs:
 	sudo systemctl restart BatiCasa.service && journalctl -fu BatiCasa
 
