@@ -13,6 +13,7 @@ apscheduler = "*"
 astral = "*"
 simple-websocket = "*"
 soco = "*"
+pyftpdlib = "*"
 
 [dev-packages]
 

@@ -17,8 +17,6 @@ tail_logs_with_zigbee2mqtt:
 
 install:
 	python3 -m pipenv install requests
-	# If Redis is missing, it's because it tends to fail when installing spotipy. Try this:
-	# python3 -m pipenv --upgrade install spotipy
 
 MKFILE_PATH=$(abspath $(lastword $(MAKEFILE_LIST)))
 SRC_DIR=$(patsubst %/,%,$(dir $(MKFILE_PATH)))
