@@ -62,7 +62,7 @@ class LeavingRoutine:
         self.world = world
         self._scheduler = None
         self.timeout_secs = 60 * 4
-        self.managed_things = [('ComedorII', 100), ('LandingPB', 100), ('EscaleraPBLight', 50)]
+        self.managed_things = [('ComedorII', 100), ('EscaleraPBLight', 50)]
 
     def trigger_leaving_routine(self):
         logger.info("Leaving home scene on")
@@ -187,7 +187,6 @@ class App:
             if action == 'off':
                 light_group_toggle_brightness_pct(registry, [
                         ('CocinaCountertop', 100),
-                        ('LandingPB', 30),
                     ]);
 
         registry.get_thing('BotonCocina')\
@@ -199,7 +198,7 @@ class App:
             if action == 'brightness_up_click':
                 registry.get_thing('SceneManager').actions['Comedor tarde'].apply_scene()
             if action == 'brightness_down_click':
-                registry.get_thing('SceneManager').actions['World off'].apply_scene(all_except=['ComedorII', 'LandingPB'])
+                registry.get_thing('SceneManager').actions['World off'].apply_scene(all_except=['ComedorII'])
             if action == 'toggle_hold':
                 registry.get_thing('SceneManager').actions['World off'].apply_scene()
 
@@ -283,7 +282,8 @@ class App:
             self.zmw.registry.get_thing('EscaleraP1').turn_off()
             self.zmw.registry.get_thing('CocinaCountertop').turn_off()
             self.zmw.registry.get_thing('CocinaCeiling').turn_off()
-            self.zmw.registry.get_thing('LandingPB').turn_off()
+            self.zmw.registry.get_thing('OficinaVelador').turn_off()
+            self.zmw.registry.get_thing('Oficina').turn_off()
             self.zmw.registry.get_thing('ComedorII').turn_off()
             self.zmw.registry.get_thing('NicoVelador').set_brightness_pct(5)
             self.zmw.registry.get_thing('Belador').set_brightness_pct(5)
@@ -292,7 +292,7 @@ class App:
             self.zmw.registry.get_thing('EscaleraP1').set('transition', 3)
             self.zmw.registry.broadcast_things([
                 'Comedor', 'Snoopy', 'EscaleraP1', 'CocinaCountertop', 'CocinaCeiling',
-                'LandingPB', 'ComedorII', 'NicoVelador', 'Belador'])
+                'OficinaVelador', 'Oficina', 'ComedorII', 'NicoVelador', 'Belador'])
         scenes.add_scene('Dormir', 'Luces bajas en toda la casa', dormir)
 
         def olivia_come():
