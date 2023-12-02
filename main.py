@@ -58,19 +58,36 @@ class Cronenberg:
             self._registry.get_thing('IkeaOutlet').set('state', False)
 
 class LeavingRoutine:
-    def __init__(self, world):
+    def __init__(self, sonos_name, world):
         self.world = world
-        self._scheduler = None
+        self.sonos_name = sonos_name
+        self._scheduler = BackgroundScheduler()
+        self._scheduler.start()
+        self._bg = None
+        self._skip_chime_bg = None
         self.timeout_secs = 60 * 4
         self.managed_things = [('ComedorII', 100), ('EscaleraPBLight', 50)]
+        # If True, plays a ringtone when the door-open event is triggered
+        self.play_door_open_chime = True
+
+    def skip_next_door_open_chime(self):
+        timeout = 30
+        logger.info(f'Door chime will skip on door-open event for {timeout} seconds')
+        self.play_door_open_chime = False
+
+        def restore_door_open_chime():
+            logger.info('Door chime will play on next door-open event')
+            self.play_door_open_chime = True
+            self._skip_chime_bg = None
+        self._skip_chime_bg = self._scheduler.add_job(
+            func=restore_door_open_chime,
+            next_run_time=datetime.datetime.now() + datetime.timedelta(seconds=timeout))
 
     def trigger_leaving_routine(self):
         logger.info("Leaving home scene on")
-        if self._scheduler is not None:
+        if self._bg is not None:
             self._bg.remove()
 
-        self._scheduler = BackgroundScheduler()
-        self._scheduler.start()
         self._bg = self._scheduler.add_job(func=self._timeout,
                                trigger="interval", seconds=self.timeout_secs)
 
@@ -85,11 +102,13 @@ class LeavingRoutine:
             self.world.get_thing(t).turn_off()
         self.world.broadcast_things([x for x,_ in self.managed_things])
         self._bg.remove()
-        self._scheduler = None
 
     def door_open_announce_and_block(self):
-        logger.info('Door open, announcing...')
-        self.world.get_thing('Sonos').play_announcement('http://bati.casa/web_assets/win95.mp3')
+        if self.play_door_open_chime is True:
+            logger.info('Door open, announcing...')
+            self.world.get_thing(self.sonos_name).play_announcement('http://bati.casa/web_assets/win95.mp3')
+        else:
+            logger.info("Door open, but we're skipping announcing...")
 
 class App:
     def __init__(self, cfg):
@@ -102,7 +121,15 @@ class App:
         retention_days = cfg['sensor_db_retention_days'] if 'sensor_db_retention_days' in cfg else None
         self.sensors = SensorsHistory(cfg['sensor_db_path'], retention_rows, retention_days)
         self.cron = Cronenberg(self.zmw.registry)
-        self.leaving_routine = LeavingRoutine(self.zmw.registry)
+        self.leaving_routine = LeavingRoutine(self._cfg['sonos']['zmw_thing_name'], self.zmw.registry)
+
+        if 'spotify' in self._cfg:
+            spotify = Spotify(self._cfg['spotify'])
+            spotify.add_reauth_paths(self.zmw.webserver)
+            self.zmw.registry.register(spotify)
+
+        if 'sonos' in self._cfg:
+            self.zmw.registry.register(Sonos(self._cfg['sonos'], self.zmw.webserver))
 
     def run_blocking(self):
         self.zmw.start_and_block()
@@ -232,14 +259,6 @@ class App:
             MultiMqttThing(self.zmw.registry, 'CocinaCountertop', ['CocinaCountertop1', 'CocinaCountertop2'])
         )
 
-        if 'spotify' in self._cfg:
-            spotify = Spotify(self._cfg['spotify'])
-            spotify.add_reauth_paths(self.zmw.webserver)
-            self.zmw.registry.register(spotify)
-
-        if 'sonos' in self._cfg:
-            self.zmw.registry.register(Sonos(self._cfg['sonos']))
-
     def register_sensors(self):
         register = lambda sensor_name, metrics: \
             self.sensors.register_sensor(
@@ -295,9 +314,9 @@ class App:
                 'OficinaVelador', 'Oficina', 'ComedorII', 'NicoVelador', 'Belador'])
         scenes.add_scene('Dormir', 'Luces bajas en toda la casa', dormir)
 
-        def olivia_come():
-            self.zmw.registry.get_thing('Sonos').play_announcement('http://bati.casa/web_assets/oliviacome.mp3')
-        scenes.add_scene('Olivia', 'Olivia come', olivia_come)
+        def skip_next_chime():
+            self.leaving_routine.skip_next_door_open_chime()
+        scenes.add_scene('Skip next door open chime', 'Skip next door open chime', skip_next_chime)
 
         self.zmw.registry.register(scenes)
 

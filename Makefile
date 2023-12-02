@@ -15,6 +15,9 @@ tail_logs:
 tail_logs_with_zigbee2mqtt:
 	journalctl -f -u BatiCasa -u zigbee2mqtt
 
+restart_and_tail_logs_with_zigbee2mqtt:
+	sudo systemctl restart BatiCasa.service && journalctl -fu BatiCasa -u zigbee2mqtt
+
 install:
 	python3 -m pipenv install requests
 
@@ -25,6 +28,8 @@ install_service:
 	@# authbind -> run in port 80 with no root
 	sudo touch /etc/authbind/byport/80
 	sudo chmod 777 /etc/authbind/byport/80
+	sudo touch /etc/authbind/byport/443
+	sudo chmod 777 /etc/authbind/byport/443
 	cat ./zigbee2mqtt2web/scripts/zigbee2mqtt2web.service.template | \
 		sed "s|#INSTALL_DIR#|$(SRC_DIR)|g" | \
 		sed "s|Zigbee2Mqtt2Web|BatiCasa|g" | \
