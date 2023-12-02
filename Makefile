@@ -1,7 +1,10 @@
-.PHONY: run install install_service restart_and_tail_logs tail_logs
+.PHONY: run testrun install install_service restart_and_tail_logs tail_logs
 
 run:
 	/usr/bin/authbind --deep python3 -m pipenv run python ./main.py | tee run.log
+
+testrun:
+	python3 -m pipenv run python ./main.py TESTRUN | tee run.log
 
 shell:
 	python3 -m pipenv run python
@@ -19,6 +22,7 @@ restart_and_tail_logs_with_zigbee2mqtt:
 	sudo systemctl restart BatiCasa.service && journalctl -fu BatiCasa -u zigbee2mqtt
 
 install:
+	pipenv --python $(shell which python3)
 	python3 -m pipenv install requests
 
 MKFILE_PATH=$(abspath $(lastword $(MAKEFILE_LIST)))

@@ -321,7 +321,8 @@ class App:
         self.zmw.registry.register(scenes)
 
 
-with open('config.json', 'r') as fp:
+cfg_file = './config.test.json' if len(sys.argv) > 1 else 'config.json'
+with open(cfg_file, 'r') as fp:
     CFG = json.loads(fp.read())
 app = App(CFG)
 app.run_blocking()

@@ -1,0 +1,16 @@
+[packages]
+apscheduler = "*"
+astral = "*"
+flask = "*"
+flask-socketio = "*"
+paho-mqtt = "*"
+pyftpdlib = "*"
+requests = "*"
+simple-websocket = "*"
+soco = "*"
+spotipy = {git = "https://github.com/plamere/spotipy.git"}
+
+[dev-packages]
+
+[requires]
+python_version = ">= 3.9"
