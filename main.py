@@ -1,11 +1,13 @@
-import sys
-sys.path.append("./zigbee2mqtt2web")
-
-import logging
+import datetime
 import json
+import logging
+import os
+import pathlib
+import sys
 import sys
 import time
-import datetime
+
+sys.path.append(os.path.join(pathlib.Path(__file__).parent.resolve(), "zigbee2mqtt2web"))
 
 from zigbee2mqtt2web import Zigbee2Mqtt2Web
 from zigbee2mqtt2web_extras.utils.geo_helper import light_outside

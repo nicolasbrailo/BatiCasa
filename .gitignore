@@ -11,6 +11,9 @@ tts_cache
 user_audio_cache
 sensors.sqlite
 
+# Used so make ignores zigbee2mqtt deps on system deps install
+system_has_zigbee2mqtt_dep
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
