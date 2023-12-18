@@ -1,0 +1,16 @@
+[Unit]
+Description=BatiCasa
+After=zigbee2mqtt.target
+
+[Service]
+Environment=PIPENV_PIPFILE=#SRC_ROOT#/Pipfile
+ExecStart=/usr/bin/authbind --deep /usr/bin/python3 -m pipenv run python #SRC_ROOT#/main.py
+WorkingDirectory=#RUN_PATH#
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+RestartSec=3
+User=#RUN_USER#
+
+[Install]
+WantedBy=multi-user.target

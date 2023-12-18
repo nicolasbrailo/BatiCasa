@@ -29,24 +29,5 @@ install: Pipfile
 	python3 -m pipenv --python $(shell which python3 )
 	python3 -m pipenv install requests
 
-MKFILE_PATH=$(abspath $(lastword $(MAKEFILE_LIST)))
-SRC_DIR=$(patsubst %/,%,$(dir $(MKFILE_PATH)))
-
-install_service:
-	@# authbind -> run in port 80 with no root
-	sudo touch /etc/authbind/byport/80
-	sudo chmod 777 /etc/authbind/byport/80
-	sudo touch /etc/authbind/byport/443
-	sudo chmod 777 /etc/authbind/byport/443
-	cat ./zigbee2mqtt2web/scripts/zigbee2mqtt2web.service.template | \
-		sed "s|#INSTALL_DIR#|$(SRC_DIR)|g" | \
-		sed "s|Zigbee2Mqtt2Web|BatiCasa|g" | \
-		sudo tee >/dev/null /etc/systemd/system/BatiCasa.service
-	sudo systemctl stop BatiCasa | true
-	sudo systemctl daemon-reload
-	sudo systemctl enable BatiCasa
-	sudo systemctl start BatiCasa
-	sudo systemctl status BatiCasa
-
 install_system_deps:
 	make -C zigbee2mqtt2web install_system_deps
