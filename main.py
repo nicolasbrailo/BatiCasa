@@ -73,10 +73,16 @@ class App:
                 light_group_toggle_brightness_pct(reg, [('Comedor', 100), ]);
             if action == 'brightness_up_click':
                 reg.get_thing('Comedor').set_brightness_pct(100)
-                reg.broadcast_thing('Comedor')
+                reg.get_thing('Comedor').set('color_temp', 250)
             if action == 'brightness_down_click':
                 reg.get_thing('Comedor').set_brightness_pct(0)
-                reg.broadcast_thing('Comedor')
+            if action == 'arrow_left_click':
+                reg.get_thing('Comedor').set_brightness_pct(30)
+                reg.get_thing('Comedor').set('color_temp', 454)
+            if action == 'arrow_right_click':
+                reg.get_thing('Comedor').set_brightness_pct(60)
+                reg.get_thing('Comedor').set('color_temp', 370)
+            reg.broadcast_thing('Comedor')
         self.install_cb('BotonComedor', 'action', boton_comedor_click)
 
         def boton_cocina_click(action):
@@ -88,7 +94,7 @@ class App:
                 light_group_toggle_brightness_pct(reg, [('CocinaCountertop', 100)]);
             if action == 'toggle_hold':
                 time.sleep(2)
-                reg.get_thing(self._cfg['sonos']['zmw_thing_name']).play_announcement('http://192.168.1.20/web_assets/winxpshutdown.mp3', timeout_secs=20)
+                reg.get_thing(self._cfg['sonos']['zmw_thing_name']).play_announcement('http://bati.casa/web_assets/winxpshutdown.mp3', timeout_secs=20)
                 reg.get_thing('SceneManager').actions['World off'].apply_scene()
         self.install_cb('BotonCocina', 'action', boton_cocina_click)
 
@@ -104,14 +110,20 @@ class App:
                 reg.broadcast_thing(lamp)
         self.install_cb('BotonBelador', 'action', boton_belador_click)
 
+        def boton_olma_click(action):
+            if action == 'on':
+                light_group_toggle_brightness_pct(reg, [('VeladorEmma', 80), ])
+            if action == 'off':
+                light_group_toggle_brightness_pct(reg, [('VeladorOlivia', 80), ])
+        self.install_cb('BotonOlma', 'action', boton_olma_click)
+
         self.main_door_monitor = MainDoorMonitor(self.zmw, {
             'contact_sensor_name': 'SensorPuertaEntrada',
             # Works for aqara sensor, never tried with anything else
             'on_contact_action_name': 'contact',
             'sonos_name': self._cfg['sonos']['zmw_thing_name'],
             'lat_lon': (51.5464371,0.111148),
-            #'chime_url': 'http://bati.casa/web_assets/win95.mp3', # XXX TODO
-            'chime_url': 'http://192.168.1.20/web_assets/win95.mp3',
+            'chime_url': 'http://bati.casa/web_assets/win95.mp3',
             'managed_lamps': [('CocinaCeiling', 40), ('CocinaEntrada', 80),],
         })
         self.register_sensor('SensorPuertaEntrada', ['device_temperature'])
