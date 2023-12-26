@@ -21,6 +21,8 @@ from zigbee2mqtt2web_extras.sonos import Sonos
 from zigbee2mqtt2web_extras.spotify import Spotify
 from zigbee2mqtt2web import Zigbee2Mqtt2Web
 
+from timbre import Timbre
+
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(sys.stdout)
@@ -79,6 +81,9 @@ class App:
         if 'sonos' in self._cfg:
             self.reg.register(Sonos(self._cfg['sonos'], self.zmw.webserver))
 
+        if 'doorbell' in self._cfg:
+            self.doorbell = Timbre(self._cfg['doorbell'], self.zmw, self._cfg['sonos']['zmw_thing_name'])
+
         self.zmw.start_and_block()
         self.zmw.stop()
 
@@ -89,20 +94,22 @@ class App:
             MultiMqttThing(reg, 'Comedor', ['ComedorL', 'ComedorR'])
         )
         def boton_comedor_click(action):
-            if action == 'toggle':
-                light_group_toggle_brightness_pct(reg, [('Comedor', 100), ]);
-            if action == 'brightness_up_click':
+            if action == 'on_press':
                 reg.get_thing('Comedor').set_brightness_pct(100)
                 reg.get_thing('Comedor').set('color_temp', 250)
-            if action == 'brightness_down_click':
-                reg.get_thing('Comedor').set_brightness_pct(0)
-            if action == 'arrow_left_click':
-                reg.get_thing('Comedor').set_brightness_pct(30)
-                reg.get_thing('Comedor').set('color_temp', 454)
-            if action == 'arrow_right_click':
+                reg.get_thing('Snoopy').set_brightness_pct(100)
+            if action == 'up_press':
                 reg.get_thing('Comedor').set_brightness_pct(60)
                 reg.get_thing('Comedor').set('color_temp', 370)
-            reg.broadcast_thing('Comedor')
+                reg.get_thing('Snoopy').set_brightness_pct(60)
+            if action == 'down_press':
+                reg.get_thing('Comedor').set_brightness_pct(30)
+                reg.get_thing('Comedor').set('color_temp', 454)
+                reg.get_thing('Snoopy').set_brightness_pct(30)
+            if action == 'off_press':
+                reg.get_thing('Comedor').set_brightness_pct(0)
+                reg.get_thing('Snoopy').set_brightness_pct(0)
+            reg.broadcast_things(['Comedor', 'Snoopy'])
         self.install_cb('BotonComedor', 'action', boton_comedor_click)
 
         def boton_cocina_click(action):

@@ -29,5 +29,10 @@ install: Pipfile
 	python3 -m pipenv --python $(shell which python3 )
 	python3 -m pipenv install requests
 
+install_system_deps_for_cam:
+	PIPENV_PIPFILE=./Pipfile /usr/bin/python3 -mpipenv install orjson
+	PIPENV_PIPFILE=./Pipfile /usr/bin/python3 -mpipenv install aiohttp
+	PIPENV_PIPFILE=./Pipfile /usr/bin/python3 -mpipenv install typing_extensions
+
 install_system_deps:
 	make -C zigbee2mqtt2web install_system_deps
