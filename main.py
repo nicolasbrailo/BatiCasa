@@ -3,7 +3,6 @@ import logging
 import os
 import pathlib
 import sys
-import sys
 import time
 
 sys.path.append(os.path.join(pathlib.Path(__file__).parent.resolve(), "zigbee2mqtt2web"))
@@ -27,14 +26,18 @@ root = logging.getLogger()
 root.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.DEBUG)
-handler.setFormatter(logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 root.addHandler(handler)
 
-import logging
+fh = logging.FileHandler('/home/batman/BatiCasa/current.log', mode='w')
+fh.setLevel(logging.DEBUG)
+fh.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+root.addHandler(fh)
+
 logger = logging.getLogger(__name__)
 
 MY_LATLON=(51.5464371,0.111148)
+
 
 ### class Cronenberg:
 ###     def __init__(self, registry):
@@ -72,6 +75,13 @@ class App:
         def skip_next_chime():
             self.main_door_monitor.skip_next_door_open_chime()
         scenes.add_scene('Skip next door open chime', 'Skip next door open chime', skip_next_chime)
+        def comer():
+            self.reg.get_thing('CocinaCeiling').set_brightness_pct(60)
+            self.reg.get_thing('CocinaCountertop').set_brightness_pct(80)
+            self.reg.get_thing('CocinaEntrada').set_brightness_pct(20)
+            self.reg.get_thing('CocinaEntradaColor').set_brightness_pct(50)
+            self.reg.broadcast_things(['CocinaCeiling', 'CocinaCountertop', 'CocinaEntrada', 'CocinaEntradaColor'])
+        scenes.add_scene('Comer', 'Comer', comer)
 
         if 'spotify' in self._cfg:
             spotify = Spotify(self._cfg['spotify'])
@@ -114,16 +124,27 @@ class App:
 
         def boton_cocina_click(action):
             if action == 'toggle':
-                light_group_toggle_brightness_pct(reg, [('CocinaCeiling', 60), ('CocinaCountertop', 60), ('CocinaEntrada', 20)]);
+                light_group_toggle_brightness_pct(reg, [('CocinaCeiling', 60), ('CocinaCountertop', 80), ('CocinaEntrada', 20), ('CocinaEntradaColor', 60)]);
             if action == 'brightness_up_click':
                 light_group_toggle_brightness_pct(reg, [('CocinaCeiling', 100)]);
             if action == 'brightness_down_click':
                 light_group_toggle_brightness_pct(reg, [('CocinaCountertop', 100)]);
+            if action == 'arrow_right_click':
+                light_group_toggle_brightness_pct(reg, [('CocinaEntrada', 100)]);
+            if action == 'arrow_left_click':
+                light_group_toggle_brightness_pct(reg, [('CocinaEntradaColor', 100)]);
             if action == 'toggle_hold':
                 time.sleep(2)
                 reg.get_thing(self._cfg['sonos']['zmw_thing_name']).play_announcement('http://bati.casa/web_assets/winxpshutdown.mp3', timeout_secs=20)
                 reg.get_thing('SceneManager').actions['World off'].apply_scene()
         self.install_cb('BotonCocina', 'action', boton_cocina_click)
+
+        def boton_cocina_entrada_click(action):
+            if action == 'toggle':
+                self.main_door_monitor.trigger_leaving_routine()
+                return
+            return boton_cocina_click(action)
+        self.install_cb('BotonCocinaEntrada', 'action', boton_cocina_entrada_click)
 
         def boton_belador_click(action):
             if action != 'press':
