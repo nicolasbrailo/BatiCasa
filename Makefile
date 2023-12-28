@@ -32,6 +32,7 @@ install: Pipfile
 install_system_deps_for_cam:
 	PIPENV_PIPFILE=./Pipfile /usr/bin/python3 -mpipenv install orjson
 	PIPENV_PIPFILE=./Pipfile /usr/bin/python3 -mpipenv install aiohttp
+	PIPENV_PIPFILE=./Pipfile /usr/bin/python3 -mpipenv install aiortsp
 	PIPENV_PIPFILE=./Pipfile /usr/bin/python3 -mpipenv install typing_extensions
 
 install_system_deps:

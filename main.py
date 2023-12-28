@@ -92,7 +92,7 @@ class App:
             self.reg.register(Sonos(self._cfg['sonos'], self.zmw.webserver))
 
         if 'doorbell' in self._cfg:
-            self.doorbell = Timbre(self._cfg['doorbell'], self.zmw, self._cfg['sonos']['zmw_thing_name'])
+            self.doorbell = Timbre(self._cfg['doorbell'], self.zmw, self._cfg['sonos']['zmw_thing_name'], self._cfg['whatsapp'])
 
         self.zmw.start_and_block()
         self.zmw.stop()
