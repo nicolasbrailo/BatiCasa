@@ -21,6 +21,7 @@ from zigbee2mqtt2web_extras.spotify import Spotify
 from zigbee2mqtt2web import Zigbee2Mqtt2Web
 
 from timbre import Timbre
+from telegram import BatiCasaTelegramBot
 
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
@@ -57,6 +58,7 @@ MY_LATLON=(51.5464371,0.111148)
 ###             self._registry.get_thing('IkeaOutlet').set('state', False)
 ### 
 
+
 class App:
     def __init__(self, cfg):
         self._cfg = cfg
@@ -88,11 +90,22 @@ class App:
             spotify.add_reauth_paths(self.zmw.webserver)
             self.reg.register(spotify)
 
+        self.sonos = None
         if 'sonos' in self._cfg:
-            self.reg.register(Sonos(self._cfg['sonos'], self.zmw.webserver))
+            self.sonos = Sonos(self._cfg['sonos'], self.zmw.webserver)
+            self.reg.register(self.sonos)
 
+        self.doorbell = None
         if 'doorbell' in self._cfg:
             self.doorbell = Timbre(self._cfg['doorbell'], self.zmw, self._cfg['sonos']['zmw_thing_name'], self._cfg['whatsapp'])
+
+        if 'telegram' in self._cfg:
+            self.telegram = BatiCasaTelegramBot(self._cfg['telegram']['tok'],
+                                                self._cfg['telegram']['poll_secs'],
+                                                self._cfg['telegram']['bcast_chat_id'],
+                                                self._cfg['telegram']['files_cache'],
+                                                self.sonos,
+                                                self.doorbell)
 
         self.zmw.start_and_block()
         self.zmw.stop()
