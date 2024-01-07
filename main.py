@@ -14,14 +14,14 @@ from zigbee2mqtt2web_extras.monkeypatching import add_all_known_monkeypatches
 from zigbee2mqtt2web_extras.motion_sensors import MotionActivatedNightLight
 from zigbee2mqtt2web_extras.motion_sensors import MultiMotionSensor
 from zigbee2mqtt2web_extras.multi_mqtt_thing import MultiMqttThing
+from zigbee2mqtt2web_extras.reolink_doorbell import ReolinkDoorbell
 from zigbee2mqtt2web_extras.scenes import SceneManager
 from zigbee2mqtt2web_extras.sensor_history import SensorsHistory
 from zigbee2mqtt2web_extras.sonos import Sonos
 from zigbee2mqtt2web_extras.spotify import Spotify
 from zigbee2mqtt2web import Zigbee2Mqtt2Web
 
-from timbre import Timbre
-from telegram import BatiCasaTelegramBot
+from notifications import NotificationDispatcher
 
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
@@ -35,7 +35,7 @@ fh.setLevel(logging.DEBUG)
 fh.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 root.addHandler(fh)
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 MY_LATLON=(51.5464371,0.111148)
 
@@ -57,7 +57,6 @@ MY_LATLON=(51.5464371,0.111148)
 ###             self._managing_light = False
 ###             self._registry.get_thing('IkeaOutlet').set('state', False)
 ### 
-
 
 class App:
     def __init__(self, cfg):
@@ -97,15 +96,9 @@ class App:
 
         self.doorbell = None
         if 'doorbell' in self._cfg:
-            self.doorbell = Timbre(self._cfg['doorbell'], self.zmw, self._cfg['sonos']['zmw_thing_name'], self._cfg['whatsapp'])
+            self.doorbell = ReolinkDoorbell(self._cfg['doorbell'], self.zmw)
 
-        if 'telegram' in self._cfg:
-            self.telegram = BatiCasaTelegramBot(self._cfg['telegram']['tok'],
-                                                self._cfg['telegram']['poll_secs'],
-                                                self._cfg['telegram']['bcast_chat_id'],
-                                                self._cfg['telegram']['files_cache'],
-                                                self.sonos,
-                                                self.doorbell)
+        self.notifications = NotificationDispatcher(self._cfg, self.zmw, self.sonos, self.doorbell)
 
         self.zmw.start_and_block()
         self.zmw.stop()
@@ -134,6 +127,11 @@ class App:
                 reg.get_thing('Snoopy').set_brightness_pct(0)
             reg.broadcast_things(['Comedor', 'Snoopy'])
         self.install_cb('BotonComedor', 'action', boton_comedor_click)
+
+
+        reg.register_and_shadow_mqtt_thing(
+            MultiMqttThing(reg, 'CocinaCountertop', ['CocinaCountertop1', 'CocinaCountertop2'])
+        )
 
         def boton_cocina_click(action):
             if action == 'toggle':
@@ -178,6 +176,10 @@ class App:
                 light_group_toggle_brightness_pct(reg, [('VeladorOlivia', 80), ])
         self.install_cb('BotonOlma', 'action', boton_olma_click)
 
+        def boton_batiloft_click(action):
+            light_group_toggle_brightness_pct(reg, [('NicoVelador', 40), ('Belador', 60), ])
+        self.install_cb('BotonBatiloft', 'action', boton_batiloft_click)
+
         self.pbMotionActivatedNightLight = MotionActivatedNightLight(reg,
                                                     ['SensorEscaleraPB1', 'SensorEscaleraPB2'],
                                                     'CocinaEntrada', MY_LATLON)
@@ -187,12 +189,18 @@ class App:
             'contact_sensor_name': 'SensorPuertaEntrada',
             # Works for aqara sensor, never tried with anything else
             'on_contact_action_name': 'contact',
-            'sonos_name': self._cfg['sonos']['zmw_thing_name'],
             'lat_lon': MY_LATLON,
-            'chime_url': 'http://bati.casa/web_assets/win95.mp3',
             'managed_lamps': [('CocinaCeiling', 40), ('CocinaEntrada', 80),],
         })
         self.register_sensor('SensorPuertaEntrada', ['device_temperature'])
+
+        self.ventana_banio_monitor = MainDoorMonitor(self.zmw, {
+            'contact_sensor_name': 'SensorVentanaBanio',
+            'on_contact_action_name': 'contact',
+            'lat_lon': MY_LATLON,
+            'managed_lamps': [],
+        })
+        self.register_sensor('SensorVentanaBanio', ['device_temperature'])
 
         self.register_sensor("SensorTHBanio", ['temperature', 'humidity'])
         self.register_sensor("SensorTHCocina", ['temperature', 'humidity'])
@@ -206,52 +214,6 @@ class App:
 
         self.sensors.register_to_webserver(self.zmw.webserver)
         self.first_discovery_done = True
-
-    def register_scenes(self):
-        return
-###        scenes = SceneManager(self.zmw.registry)
-### 
-###         def comedor_dia():
-###             self.zmw.registry.get_thing('Comedor').set('color_rgb', 'FFFFFF')
-###             self.zmw.registry.get_thing('Comedor').set_brightness_pct(100)
-###             self.zmw.registry.get_thing('Snoopy').set_brightness_pct(100)
-###             self.zmw.registry.get_thing('Comedor').set('transition', 3)
-###             self.zmw.registry.get_thing('Snoopy').set('transition', 3)
-###             self.zmw.registry.broadcast_things(['Comedor', 'Snoopy'])
-###         scenes.add_scene('Comedor dia', 'Luces altas, comedor', comedor_dia)
-### 
-###         def comedor_tarde():
-###             self.zmw.registry.get_thing('Comedor').set('color_rgb', 'FF8820')
-###             self.zmw.registry.get_thing('Comedor').set_brightness_pct(60)
-###             self.zmw.registry.get_thing('Snoopy').set_brightness_pct(60)
-###             self.zmw.registry.get_thing('EscaleraP1').set_brightness_pct(15)
-###             self.zmw.registry.get_thing('Comedor').set('transition', 3)
-###             self.zmw.registry.get_thing('Snoopy').set('transition', 3)
-###             self.zmw.registry.get_thing('EscaleraP1').set('transition', 3)
-###             self.zmw.registry.broadcast_things(['Comedor', 'Snoopy', 'EscaleraP1'])
-###         scenes.add_scene('Comedor tarde', 'Comedor, luces medias', comedor_tarde)
-### 
-###         def dormir():
-###             self.zmw.registry.get_thing('Comedor').set_brightness_pct(5)
-###             self.zmw.registry.get_thing('Comedor').set('color_rgb', 'C20')
-###             self.zmw.registry.get_thing('Snoopy').set_brightness_pct(5)
-###             self.zmw.registry.get_thing('EscaleraP1').turn_off()
-###             self.zmw.registry.get_thing('CocinaCountertop').turn_off()
-###             self.zmw.registry.get_thing('CocinaCeiling').turn_off()
-###             self.zmw.registry.get_thing('OficinaVelador').turn_off()
-###             self.zmw.registry.get_thing('Oficina').turn_off()
-###             self.zmw.registry.get_thing('ComedorII').turn_off()
-###             self.zmw.registry.get_thing('NicoVelador').set_brightness_pct(5)
-###             self.zmw.registry.get_thing('Belador').set_brightness_pct(5)
-###             self.zmw.registry.get_thing('Comedor').set('transition', 3)
-###             self.zmw.registry.get_thing('Snoopy').set('transition', 3)
-###             self.zmw.registry.get_thing('EscaleraP1').set('transition', 3)
-###             self.zmw.registry.broadcast_things([
-###                 'Comedor', 'Snoopy', 'EscaleraP1', 'CocinaCountertop', 'CocinaCeiling',
-###                 'OficinaVelador', 'Oficina', 'ComedorII', 'NicoVelador', 'Belador'])
-###         scenes.add_scene('Dormir', 'Luces bajas en toda la casa', dormir)
-### 
-###         self.zmw.registry.register(scenes)
 
     def register_sensor(self, thing_name, supported_metrics):
         self.sensors.register_sensor(
