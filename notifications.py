@@ -37,7 +37,7 @@ class BatiCasaTelegramBot(TelegramLongpollBot):
         log.info('Connected to Telegram bot %s', bot.bot_info['first_name'])
 
     def on_bot_received_message(self, msg):
-        log.info('Telegram bot %s received a message: %s', bot.bot_info['first_name'], msg)
+        log.info('Telegram bot received a message: %s', msg)
 
 
 class NotificationDispatcher:
@@ -73,12 +73,17 @@ class NotificationDispatcher:
 
     def _on_message(self, _topic, msg):
         if 'event' not in msg:
+            log.errror("Bad message format %s", msg)
             return
+
+        log.debug("Processing notification from system event %s", msg)
 
         # Doorbell events
         if msg['event'] == 'on_doorbell_button_pressed':
+            log.debug("Event: Doorbell button press")
             self._sonos.play_announcement('http://192.168.1.20/web_assets/knockknock.mp3')
         elif msg['event'] == 'on_doorbell_cam_motion_detected':
+            log.debug("Event: Doorbell cam detected motion")
             if 'door_motion' in self._paused_notifications:
                 log.info('door_motion event triggered, but notifications are paused')
                 return
@@ -89,33 +94,38 @@ class NotificationDispatcher:
             if self.wa is not None:
                 self.wa.send_photo(msg['snap'], "Motion detected!")
         elif msg['event'] == 'on_doorbell_cam_motion_cleared':
-            pass
+            log.debug("Event: Doorbell cam motion cleared")
         elif msg['event'] == 'on_doorbell_cam_motion_timeout':
-            pass
+            log.debug("Event: Doorbell cam motion timeout")
 
         # Contact sensor events
-        elif msg['event'] == 'on_main_door_open' and msg['thing_name'] == 'SensorPuertaEntrada':
-            log.info('door_open event triggered')
-            if msg['user_requested_mute_announcement'] or 'door_open' in self._paused_notifications:
-                log.info('door_open event triggered, but notifications are paused')
-                return
-            self._sonos.play_announcement('http://bati.casa/web_assets/win95.mp3')
-        elif msg['event'] == 'on_main_door_open' and msg['thing_name'] == 'SensorVentanaBanio':
-            if 'window_open' in self._paused_notifications:
-                log.info('window_open event triggered, but notifications are paused')
-                return
-            self._sonos.tts_announce('es', 'Ventana abierta')
-            if self.telegram is not None:
-                self.telegram.send_message(self._baticasa_chat_id, f'Event triggered: Ventana frente abierta')
+        elif msg['event'] == 'on_main_door_open':
+            log.debug('Contact sensor event triggered')
+            if msg['thing_name'] == 'SensorPuertaEntrada':
+                log.info('door_open event triggered')
+                if msg['user_requested_mute_announcement'] or 'door_open' in self._paused_notifications:
+                    log.info('door_open event triggered, but notifications are paused')
+                    return
+                self._sonos.play_announcement('http://bati.casa/web_assets/win95.mp3')
+
+            if msg['thing_name'] == 'SensorVentanaBanio':
+                log.info('window_open event triggered')
+                if 'window_open' in self._paused_notifications:
+                    log.info('window_open event triggered, but notifications are paused')
+                    return
+                self._sonos.tts_announce('es', 'Ventana abierta')
+                if self.telegram is not None:
+                    self.telegram.send_message(self._baticasa_chat_id, f'Event triggered: Ventana frente abierta')
+
         elif msg['event'] == 'on_main_door_closed':
-            pass
+            log.debug('Contact sensor closed event triggered')
 
         # Telegram message handling
         elif msg['event'] == 'on_telegram_bot_recv_remote_cmd':
+            log.info('Received Telegram command %s: %s', msg['cmd'], msg)
             self._on_telegram_cmd(msg)
 
     def _on_telegram_cmd(self, msg):
-        log.info('Received Telegram command %s: %s', msg['cmd'], msg)
         if msg['cmd'] == 'say':
             tts = ' '.join(msg['args'])
             self._sonos.tts_announce('es', tts)
