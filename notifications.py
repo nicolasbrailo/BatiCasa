@@ -1,22 +1,23 @@
 from apscheduler.schedulers.background import BackgroundScheduler
-import datetime
 import os
 import pathlib
+import subprocess
 import sys
 
 sys.path.append(os.path.join(pathlib.Path(__file__).parent.resolve(), "zigbee2mqtt2web"))
-from zigbee2mqtt2web_extras.utils.telegram import TelegramLongpollBot
+
+from zigbee2mqtt2web_extras.thirdparty.PyTelegramBot.pytelegrambot import TelegramLongpollBot
 from zigbee2mqtt2web_extras.utils.whatsapp import WhatsApp
 from zigbee2mqtt2web.mqtt_proxy import MqttProxy
 
 import logging
 log = logging.getLogger(__name__)
 
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 
 class BatiCasaTelegramBot(TelegramLongpollBot):
-    def __init__(self, zmw, tok, poll_interval_secs):
+    def __init__(self, zmw, cfg):
         def _bcast_telegram_cmd(bot, msg):
             zmw.announce_system_event({
                 'event': 'on_telegram_bot_recv_remote_cmd',
@@ -30,14 +31,30 @@ class BatiCasaTelegramBot(TelegramLongpollBot):
             ('snap', 'Share doorbell snapshot', _bcast_telegram_cmd),
             ('stfu_door_motion', 'Pause door motion notifications for the next half hour', _bcast_telegram_cmd),
             ('stfu', 'Pause a notification type for the next N minutes (eg: /stfu on_main_door_open 90)', _bcast_telegram_cmd),
+            ('syslog', 'Send syslog', self._syslog_rq),
         ]
-        super().__init__(tok, poll_interval_secs=poll_interval_secs, bot_name='BatiCasa Bot', bot_descr='BatiCasa control over Telegram', cmds=cmds)
+
+        self._syslog_unit_name = cfg['server_systemd_name']
+        tok = cfg['telegram']['tok']
+        poll_interval_secs = cfg['telegram']['poll_secs']
+        accepted_chats = cfg['telegram']['accepted_chat_ids']
+        super().__init__(tok, accepted_chats, poll_interval_secs=poll_interval_secs, bot_name='BatiCasa Bot', bot_descr='BatiCasa control over Telegram', cmds=cmds)
 
     def on_bot_connected(self, bot):
         log.info('Connected to Telegram bot %s', bot.bot_info['first_name'])
 
     def on_bot_received_message(self, msg):
         log.info('Telegram bot received a message: %s', msg)
+
+    def _syslog_rq(self, bot, msg):
+        num_lines = 10
+        cmd = '/usr/bin/journalctl' \
+            f' --unit={self._syslog_unit_name}' \
+            f' -n {num_lines}' \
+              ' --no-pager --reverse --output=cat'
+        syslogcmd = subprocess.run(
+            cmd.split(), stdout=subprocess.PIPE, text=True, check=True)
+        self.send_message(msg['chat']['id'], syslogcmd.stdout)
 
 
 class NotificationDispatcher:
@@ -58,7 +75,7 @@ class NotificationDispatcher:
         self.telegram = None
         if 'telegram' in cfg:
             self._baticasa_chat_id = cfg['telegram']['bcast_chat_id']
-            self.telegram = BatiCasaTelegramBot(zmw, cfg['telegram']['tok'], cfg['telegram']['poll_secs'])
+            self.telegram = BatiCasaTelegramBot(zmw, cfg)
         self.wa = None
         if 'whatsapp' in cfg:
             self.wa = WhatsApp(cfg['whatsapp'], test_mode=False)
@@ -91,6 +108,7 @@ class NotificationDispatcher:
                 self.telegram.send_photo(
                         self._baticasa_chat_id, msg['snap'], "Motion detected!",
                         disable_notifications=self._should_skip_push_notify())
+                self.telegram.send_message(self._baticasa_chat_id, f"Motion level {msg['motion_level']} cam state {msg['msg']}")
             if self.wa is not None:
                 self.wa.send_photo(msg['snap'], "Motion detected!")
         elif msg['event'] == 'on_doorbell_cam_motion_cleared':
@@ -115,7 +133,7 @@ class NotificationDispatcher:
                     return
                 self._sonos.tts_announce('es', 'Ventana abierta')
                 if self.telegram is not None:
-                    self.telegram.send_message(self._baticasa_chat_id, f'Event triggered: Ventana frente abierta')
+                    self.telegram.send_message(self._baticasa_chat_id, 'Event triggered: Ventana frente abierta')
 
         elif msg['event'] == 'on_main_door_closed':
             log.debug('Contact sensor closed event triggered')
@@ -154,10 +172,11 @@ class NotificationDispatcher:
             self._paused_notifications.remove(event)
             log.info("Notifications for %s unpaused", event)
             self.telegram.send_message(self._baticasa_chat_id, f"Notifications for {event} are now unpaused")
+        # Notify first - so even if this fails, we'll announce that notifications are off
         self.telegram.send_message(self._baticasa_chat_id, f"Notifications for {event} are paused for {timeout_secs/60} minutes")
         self._paused_notifications.add(event)
         self._scheduler.add_job(
             func=reenable_notifs,
             trigger="date",
-            run_date=(datetime.datetime.now() + datetime.timedelta(seconds=timeout_secs)))
+            run_date=(datetime.now() + timedelta(seconds=timeout_secs)))
 

@@ -204,13 +204,13 @@ class App:
 
         self.register_sensor("SensorTHBanio", ['temperature', 'humidity'])
         self.register_sensor("SensorTHCocina", ['temperature', 'humidity'])
-        self.register_sensor("SensorTHEntrada", ['temperature', 'humidity'])
+        self.register_sensor("SensorTHOlma", ['temperature', 'humidity'])
         self.register_sensor("SensorAQMOlma", ['humidity', 'pm25', 'temperature', 'voc_index'])
         self.register_sensor("SensorAQMTVRoom", ['humidity', 'pm25', 'temperature', 'voc_index'])
-        #self.register_sensor("SensorAQMCuarto", ['humidity', 'pm25', 'temperature', 'voc_index'])
+        self.register_sensor("SensorAQMCuarto", ['humidity', 'pm25', 'temperature', 'voc_index'])
         self.zmw.registry.get_thing("SensorAQMOlma").is_mqtt_spammy = True
         self.zmw.registry.get_thing("SensorAQMTVRoom").is_mqtt_spammy = True
-        #self.zmw.registry.get_thing("SensorAQMCuarto").is_mqtt_spammy = True
+        self.zmw.registry.get_thing("SensorAQMCuarto").is_mqtt_spammy = True
 
         if self.first_discovery_done:
             return
