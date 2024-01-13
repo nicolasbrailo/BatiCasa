@@ -211,6 +211,9 @@ class App:
         self.zmw.registry.get_thing("SensorAQMOlma").is_mqtt_spammy = True
         self.zmw.registry.get_thing("SensorAQMTVRoom").is_mqtt_spammy = True
         self.zmw.registry.get_thing("SensorAQMCuarto").is_mqtt_spammy = True
+        self.zmw.registry.get_thing("SensorTHBanio").is_mqtt_spammy = True
+        self.zmw.registry.get_thing("SensorTHCocina").is_mqtt_spammy = True
+        self.zmw.registry.get_thing("SensorTHOlma").is_mqtt_spammy = True
 
         if self.first_discovery_done:
             return
