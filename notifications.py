@@ -59,10 +59,6 @@ class BatiCasaTelegramBot(TelegramLongpollBot):
 
 class NotificationDispatcher:
     def __init__(self, cfg, zmw, sonos, doorbell):
-        self._mqtt = MqttProxy(cfg, cfg['mqtt_topic_zmw'])
-        self._mqtt.on_message = self._on_message
-        self._mqtt.start()
-
         self._sonos = sonos
         self._doorbell = doorbell
         self._files_cache = cfg['telegram']['files_cache']
@@ -80,6 +76,12 @@ class NotificationDispatcher:
         if 'whatsapp' in cfg:
             self.wa = WhatsApp(cfg['whatsapp'], test_mode=False)
 
+        #self._mqtt = MqttProxy(cfg, cfg['mqtt_topic_zmw'])
+        #self._mqtt.on_message = self._on_mqtt_message
+        #self._mqtt.start()
+        zmw.subscribe_to_system_events(self._on_message)
+
+
     def _should_skip_push_notify(self):
         current_time = datetime.now().time()
         start_time = time(22, 0)  # 10 pm
@@ -88,7 +90,10 @@ class NotificationDispatcher:
             return True
         return False
 
-    def _on_message(self, _topic, msg):
+    def _on_mqtt_message(self, _topic, msg):
+        self._on_message(msg)
+
+    def _on_message(self, msg):
         if 'event' not in msg:
             log.errror("Bad message format %s", msg)
             return
