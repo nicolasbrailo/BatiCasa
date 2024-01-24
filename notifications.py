@@ -111,9 +111,9 @@ class NotificationDispatcher:
                 return
             if self.telegram is not None:
                 self.telegram.send_photo(
-                        self._baticasa_chat_id, msg['snap'], "Motion detected!",
+                        self._baticasa_chat_id, msg['snap'], f"Motion level {msg['motion_level']} detected!",
                         disable_notifications=self._should_skip_push_notify())
-                self.telegram.send_message(self._baticasa_chat_id, f"Motion level {msg['motion_level']} cam state {msg['msg']}")
+                log.debug(f"Cam reports motion, state {msg['msg']}")
             if self.wa is not None:
                 self.wa.send_photo(msg['snap'], "Motion detected!")
         elif msg['event'] == 'on_doorbell_cam_motion_cleared':
