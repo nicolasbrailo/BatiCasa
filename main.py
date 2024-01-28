@@ -7,6 +7,7 @@ import time
 
 sys.path.append(os.path.join(pathlib.Path(__file__).parent.resolve(), "zigbee2mqtt2web"))
 
+from zigbee2mqtt2web_extras.light_helpers import any_light_on
 from zigbee2mqtt2web_extras.light_helpers import any_light_on_in_the_house
 from zigbee2mqtt2web_extras.light_helpers import light_group_toggle_brightness_pct
 from zigbee2mqtt2web_extras.main_door_monitor import MainDoorMonitor
@@ -22,6 +23,7 @@ from zigbee2mqtt2web_extras.spotify import Spotify
 from zigbee2mqtt2web import Zigbee2Mqtt2Web
 
 from notifications import NotificationDispatcher
+from crons import Cronenberg
 
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
@@ -40,24 +42,6 @@ log = logging.getLogger(__name__)
 MY_LATLON=(51.5464371,0.111148)
 
 
-### class Cronenberg:
-###     def __init__(self, registry):
-###         self._managing_light = False
-###         self._registry = registry
-### 
-###     def _tick(self):
-###         local_hour = datetime.datetime.now().hour # no tz, just local hour
-###         if not light_outside() and local_hour < 23 and local_hour > 12:
-###             logger.info("Arbolito on")
-###             self._registry.get_thing('IkeaOutlet').set('state', True)
-###             self._managing_light = True
-### 
-###         elif self._managing_light and local_hour == 23:
-###             logger.info("Arbolito off")
-###             self._managing_light = False
-###             self._registry.get_thing('IkeaOutlet').set('state', False)
-### 
-
 class App:
     def __init__(self, cfg):
         self._cfg = cfg
@@ -67,8 +51,7 @@ class App:
         retention_days = cfg['sensor_db_retention_days'] if 'sensor_db_retention_days' in cfg else None
         self.sensors = SensorsHistory(cfg['sensor_db_path'], retention_rows, retention_days)
 
-        self.zmw = Zigbee2Mqtt2Web(cfg)
-        self.zmw.registry.on_mqtt_network_discovered(self.on_net_discovery)
+        self.zmw = Zigbee2Mqtt2Web(cfg, self.on_net_discovery)
         add_all_known_monkeypatches(self.zmw)
         self.reg = self.zmw.registry
 
@@ -80,9 +63,18 @@ class App:
             self.reg.get_thing('CocinaCeiling').set_brightness_pct(60)
             self.reg.get_thing('CocinaCountertop').set_brightness_pct(80)
             self.reg.get_thing('CocinaEntrada').set_brightness_pct(20)
-            self.reg.get_thing('CocinaEntradaColor').set_brightness_pct(50)
-            self.reg.broadcast_things(['CocinaCeiling', 'CocinaCountertop', 'CocinaEntrada', 'CocinaEntradaColor'])
+            self.reg.get_thing('EntradaColor').set_brightness_pct(50)
+            self.reg.get_thing('CocinaSofa').set_brightness_pct(30)
+            self.reg.broadcast_things(['CocinaCeiling', 'CocinaCountertop', 'CocinaEntrada', 'EntradaColor', 'CocinaSofa'])
         scenes.add_scene('Comer', 'Comer', comer)
+        def gezellig():
+            self.reg.get_thing('CocinaCountertop').set_brightness_pct(50)
+            self.reg.get_thing('CocinaCeiling').set_brightness_pct(20)
+            self.reg.get_thing('CocinaEntrada').set_brightness_pct(15)
+            self.reg.get_thing('EntradaColor').set_brightness_pct(90)
+            self.reg.get_thing('CocinaSofa').set_brightness_pct(10)
+            self.reg.broadcast_things(['CocinaCeiling', 'CocinaCountertop', 'CocinaEntrada', 'EntradaColor', 'CocinaSofa'])
+        scenes.add_scene('Gezellig', 'Gezellig', gezellig)
 
         if 'spotify' in self._cfg:
             spotify = Spotify(self._cfg['spotify'])
@@ -99,7 +91,9 @@ class App:
             self.doorbell = ReolinkDoorbell(self._cfg['doorbell'], self.zmw)
 
         self.notifications = NotificationDispatcher(self._cfg, self.zmw, self.sonos, self.doorbell)
+        self.crons = Cronenberg(self.zmw)
 
+        self.boton_cocina_click_state = 0
         self.zmw.start_and_block()
         self.zmw.stop()
 
@@ -133,9 +127,21 @@ class App:
             MultiMqttThing(reg, 'CocinaCountertop', ['CocinaCountertop1', 'CocinaCountertop2'])
         )
 
+        self.boton_cocina_click_state = 0
         def boton_cocina_click(action):
             if action == 'toggle':
-                light_group_toggle_brightness_pct(reg, [('CocinaCeiling', 60), ('CocinaCountertop', 80), ('CocinaEntrada', 20), ('CocinaEntradaColor', 60)]);
+                global boton_cocina_click
+                group_on = any_light_on(reg, ['CocinaCeiling', 'CocinaCountertop', 'CocinaEntrada', 'EntradaColor', 'CocinaSofa'])
+                if not group_on:
+                    self.boton_cocina_click_state = 0
+                if self.boton_cocina_click_state == 0:
+                    reg.get_thing('SceneManager').actions['Gezellig'].apply_scene()
+                    self.boton_cocina_click_state = 1
+                elif self.boton_cocina_click_state == 1:
+                    reg.get_thing('SceneManager').actions['Comer'].apply_scene()
+                    self.boton_cocina_click_state = 2
+                else:
+                    light_group_toggle_brightness_pct(reg, [('CocinaCeiling', 60), ('CocinaCountertop', 80), ('CocinaEntrada', 20), ('EntradaColor', 60), ('CocinaSofa', 20)]);
             if action == 'brightness_up_click':
                 light_group_toggle_brightness_pct(reg, [('CocinaCeiling', 100)]);
             if action == 'brightness_down_click':
@@ -143,7 +149,7 @@ class App:
             if action == 'arrow_right_click':
                 light_group_toggle_brightness_pct(reg, [('CocinaEntrada', 100)]);
             if action == 'arrow_left_click':
-                light_group_toggle_brightness_pct(reg, [('CocinaEntradaColor', 100)]);
+                light_group_toggle_brightness_pct(reg, [('EntradaColor', 100)]);
             if action == 'toggle_hold':
                 time.sleep(2)
                 reg.get_thing(self._cfg['sonos']['zmw_thing_name']).play_announcement('http://bati.casa/web_assets/winxpshutdown.mp3', timeout_secs=20)

@@ -148,6 +148,10 @@ class NotificationDispatcher:
             log.info('Received Telegram command %s: %s', msg['cmd'], msg)
             self._on_telegram_cmd(msg)
 
+        # Misc events
+        elif msg['event'] == 'on_forgot_lights_on_morning':
+            self.telegram.send_message(self._baticasa_chat_id, f'Someone forgot lights on, will turn off: {msg["light_names"]}')
+
     def _on_telegram_cmd(self, msg):
         if msg['cmd'] == 'say':
             tts = ' '.join(msg['args'])
