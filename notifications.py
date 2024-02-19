@@ -36,9 +36,13 @@ class BatiCasaTelegramBot(TelegramLongpollBot):
 
         self._syslog_unit_name = cfg['server_systemd_name']
         tok = cfg['telegram']['tok']
-        poll_interval_secs = cfg['telegram']['poll_secs']
         accepted_chats = cfg['telegram']['accepted_chat_ids']
-        super().__init__(tok, accepted_chats, poll_interval_secs=poll_interval_secs, bot_name='BatiCasa Bot', bot_descr='BatiCasa control over Telegram', cmds=cmds)
+        super().__init__(tok, accepted_chats,
+                         short_poll_interval_secs=cfg['telegram']['short_poll_interval_secs'],
+                         long_poll_interval_secs=cfg['telegram']['long_poll_interval_secs'],
+                         bot_name='BatiCasa Bot',
+                         bot_descr='BatiCasa control over Telegram',
+                         cmds=cmds)
 
     def on_bot_connected(self, bot):
         log.info('Connected to Telegram bot %s', bot.bot_info['first_name'])
