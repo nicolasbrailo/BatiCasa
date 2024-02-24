@@ -126,7 +126,8 @@ class NotificationDispatcher:
         elif msg['event'] == 'on_doorbell_cam_has_new_recording':
             self.telegram.send_message(self._baticasa_chat_id, f'Doorbell cam has new recording available at {msg["fpath"]}')
         elif msg['event'] == 'on_doorbell_cam_last_recording_reencoded':
-            self.telegram.send_message(self._baticasa_chat_id, f'Doorbell cam has new reencoded recording available at {msg["fpath"]}')
+            self.telegram.send_video(self._baticasa_chat_id, msg['fpath'], f"Here's the last recording of the doorbell cam",
+                                     disable_notifications=self._should_skip_push_notify())
         elif msg['event'] == 'on_doorbell_cam_motion_cleared':
             log.debug("Event: Doorbell cam motion cleared")
         elif msg['event'] == 'on_doorbell_cam_motion_timeout':
