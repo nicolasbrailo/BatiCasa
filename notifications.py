@@ -29,6 +29,7 @@ class BatiCasaTelegramBot(TelegramLongpollBot):
         cmds = [
             ('say', 'Make Speaker announcement', _bcast_telegram_cmd),
             ('snap', 'Share doorbell snapshot', _bcast_telegram_cmd),
+            ('rec', 'Record and share doorbell camera for N[=10] seconds', _bcast_telegram_cmd),
             ('stfu_door_motion', 'Pause door motion notifications for the next half hour', _bcast_telegram_cmd),
             ('stfu', 'Pause a notification type for the next N minutes (eg: /stfu on_main_door_open 90)', _bcast_telegram_cmd),
             ('syslog', 'Send syslog', self._syslog_rq),
@@ -121,6 +122,8 @@ class NotificationDispatcher:
                 log.debug(f"Cam reports motion, state {msg['msg']}")
             if self.wa is not None:
                 self.wa.send_photo(msg['snap'], "Motion detected!")
+        elif msg['event'] == 'on_doorbell_cam_has_new_recording':
+            self.telegram.send_message(self._baticasa_chat_id, 'Doorbell cam has new recording available at {msg["fpath"]}')
         elif msg['event'] == 'on_doorbell_cam_motion_cleared':
             log.debug("Event: Doorbell cam motion cleared")
         elif msg['event'] == 'on_doorbell_cam_motion_timeout':
@@ -177,7 +180,16 @@ class NotificationDispatcher:
                 self.telegram.send_message(msg['msg']['chat']['id'], f"Invalid event {msg['args'][0]} ({self._pausable_notifications})")
                 return
             self.pause_notification(msg['args'][0], int(msg['args'][1]) * 60)
+        elif msg['cmd'] == 'rec':
+            duration_secs = 10
+            if len(msg['args']) >= 1 and msg['args'][0].isdigit():
+                duration_secs = int(msg['args'][0])
+            self.trigger_cam_recording(duration_secs)
+            self.telegram.send_message(msg['msg']['chat']['id'], "Start doorbell recording...")
 
+
+    def trigger_cam_recording(self, duration_secs):
+        self._doorbell.trigger_recording(duration_secs)
 
     def pause_notification(self, event, timeout_secs):
         log.info("Notifications for %s paused for %s seconds", event, timeout_secs)
