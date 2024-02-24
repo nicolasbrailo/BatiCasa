@@ -66,6 +66,7 @@ class NotificationDispatcher:
         self._sonos = sonos
         self._doorbell = doorbell
         self._files_cache = cfg['telegram']['files_cache']
+        self._sound_asset_on_doorbell = cfg['misc']['sound_asset_on_doorbell']
 
         self._paused_notifications = set()
         self._pausable_notifications = set({'door_motion', 'window_open', 'door_open'})
@@ -107,7 +108,7 @@ class NotificationDispatcher:
         # Doorbell events
         if msg['event'] == 'on_doorbell_button_pressed':
             log.debug("Event: Doorbell button press")
-            self._sonos.play_announcement('http://192.168.1.20/web_assets/knockknock.mp3')
+            self._sonos.play_announcement(self._sound_asset_on_doorbell)
         elif msg['event'] == 'on_doorbell_cam_motion_detected':
             log.debug("Event: Doorbell cam detected motion")
             if 'door_motion' in self._paused_notifications:

@@ -4,6 +4,7 @@ import os
 import pathlib
 import sys
 import time
+from flask import send_from_directory
 
 sys.path.append(os.path.join(pathlib.Path(__file__).parent.resolve(), "zigbee2mqtt2web"))
 
@@ -52,6 +53,7 @@ class App:
         self.sensors = SensorsHistory(cfg['sensor_db_path'], retention_rows, retention_days)
 
         self.zmw = Zigbee2Mqtt2Web(cfg, self.on_net_discovery)
+        self.zmw.webserver.add_url_rule('/svcs', self._baticasa_svc_idx)
         add_all_known_monkeypatches(self.zmw)
         self.reg = self.zmw.registry
 
@@ -235,6 +237,9 @@ class App:
 
     def install_cb(self, thing, changed_prop, cb):
         self.zmw.registry.get_thing(thing).actions[changed_prop].value.on_change_from_mqtt = cb
+
+    def _baticasa_svc_idx(self):
+        return send_from_directory(self._cfg["www_extra_local_path"], "svcs.html")
 
 
 with open('BatiCasa.config.json', 'r') as fp:
