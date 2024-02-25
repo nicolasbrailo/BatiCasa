@@ -75,6 +75,7 @@ class NotificationDispatcher:
         self._scheduler = BackgroundScheduler()
         self._scheduler.start()
 
+        self._waiting_rtsp_cb = False
         self.telegram = None
         if 'telegram' in cfg:
             self._baticasa_chat_id = cfg['telegram']['bcast_chat_id']
@@ -123,15 +124,27 @@ class NotificationDispatcher:
                 log.debug(f"Cam reports motion, state {msg['msg']}")
             if self.wa is not None:
                 self.wa.send_photo(msg['snap'], "Motion detected!")
-        elif msg['event'] == 'on_doorbell_cam_has_new_recording':
-            self.telegram.send_message(self._baticasa_chat_id, f'Doorbell cam has new recording available at {msg["fpath"]}')
-        elif msg['event'] == 'on_doorbell_cam_last_recording_reencoded':
-            self.telegram.send_video(self._baticasa_chat_id, msg['fpath'], f"Here's the last recording of the doorbell cam",
-                                     disable_notifications=self._should_skip_push_notify())
         elif msg['event'] == 'on_doorbell_cam_motion_cleared':
             log.debug("Event: Doorbell cam motion cleared")
         elif msg['event'] == 'on_doorbell_cam_motion_timeout':
             log.debug("Event: Doorbell cam motion timeout")
+        # RTSP events
+        elif self._waiting_rtsp_cb and msg['event'] == 'on_cam_recording_available':
+            self._waiting_rtsp_cb = False
+            self.telegram.send_message(self._baticasa_chat_id, f'Cam {msg["doorbell_cam"]}: New recording at {msg["fpath"]}, request it with send_rec',
+                                     disable_notifications=self._should_skip_push_notify())
+        elif self._waiting_rtsp_cb and msg['event'] == 'on_cam_recording_reencoded':
+            self._waiting_rtsp_cb = False
+            self.telegram.send_video(self._baticasa_chat_id, msg['fpath'], f'Recording {msg["original_fpath"]}',
+                                     disable_notifications=self._should_skip_push_notify())
+        elif self._waiting_rtsp_cb and msg['event'] == 'on_cam_recording_failed':
+            self._waiting_rtsp_cb = False
+            self.telegram.send_message(self._baticasa_chat_id, f'Cam {msg["doorbell_cam"]}: An RTSP recording failed at {msg["fpath"]}',
+                                     disable_notifications=self._should_skip_push_notify())
+        elif self._waiting_rtsp_cb and msg['event'] == 'on_cam_recording_reencoding_failed':
+            self._waiting_rtsp_cb = False
+            self.telegram.send_message(self._baticasa_chat_id, f'Cam {msg["doorbell_cam"]}: Telegram encoding failed for recording {msg["original_fpath"]}',
+                                     disable_notifications=self._should_skip_push_notify())
 
         # Contact sensor events
         elif msg['event'] == 'on_main_door_open':
@@ -185,16 +198,19 @@ class NotificationDispatcher:
                 return
             self.pause_notification(msg['args'][0], int(msg['args'][1]) * 60)
         elif msg['cmd'] == 'rec':
-            duration_secs = 10
-            if len(msg['args']) >= 1 and msg['args'][0].isdigit():
-                duration_secs = int(msg['args'][0])
-            self._doorbell.trigger_recording(duration_secs)
-            self.telegram.send_message(msg['msg']['chat']['id'], "Start doorbell recording...")
+            self._waiting_rtsp_cb = True
+            duration_secs = int(msg['args'][0]) if len(msg['args']) >= 1 and msg['args'][0].isdigit() else 10
+            self.telegram.send_message(msg['msg']['chat']['id'], f"Recording doorbell for {duration_secs} seconds...")
+            self._doorbell.rtsp.trigger_recording(duration_secs)
         elif msg['cmd'] == 'send_rec':
-            if self._doorbell.reencode_last_recording_for_messaging():
-                self.telegram.send_message(msg['msg']['chat']['id'], "Reencoding...")
+            self._waiting_rtsp_cb = True
+            if len(msg['args']) >= 1:
+                fpath = str(msg['args'][0])
+                self._doorbell.rtsp.reencode_for_telegram(fpath)
+                self.telegram.send_message(msg['msg']['chat']['id'], f"Reencoding {fpath}...")
             else:
-                self.telegram.send_message(msg['msg']['chat']['id'], "Couldn't find last recording to send")
+                self._doorbell.rtsp.reencode_for_telegram(None)
+                self.telegram.send_message(msg['msg']['chat']['id'], f"Reencoding last recording...")
 
 
     def pause_notification(self, event, timeout_secs):

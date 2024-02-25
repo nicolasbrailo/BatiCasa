@@ -16,7 +16,7 @@ from zigbee2mqtt2web_extras.monkeypatching import add_all_known_monkeypatches
 from zigbee2mqtt2web_extras.motion_sensors import MotionActivatedNightLight
 from zigbee2mqtt2web_extras.motion_sensors import MultiMotionSensor
 from zigbee2mqtt2web_extras.multi_mqtt_thing import MultiMqttThing
-from zigbee2mqtt2web_extras.reolink_doorbell import ReolinkDoorbell
+from zigbee2mqtt2web_extras.reolink_cam import ReolinkDoorbell
 from zigbee2mqtt2web_extras.scenes import SceneManager
 from zigbee2mqtt2web_extras.sensor_history import SensorsHistory
 from zigbee2mqtt2web_extras.sonos import Sonos
