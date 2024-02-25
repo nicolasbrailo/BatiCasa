@@ -93,7 +93,7 @@ class App:
             self.doorbell = ReolinkDoorbell(self._cfg['doorbell'], self.zmw)
 
         self.notifications = NotificationDispatcher(self._cfg, self.zmw, self.sonos, self.doorbell)
-        self.crons = Cronenberg(self.zmw)
+        self.crons = Cronenberg(self.zmw, MY_LATLON)
 
         self.boton_cocina_click_state = 0
         self.zmw.start_and_block()
