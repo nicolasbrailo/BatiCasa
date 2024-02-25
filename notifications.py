@@ -129,21 +129,22 @@ class NotificationDispatcher:
         elif msg['event'] == 'on_doorbell_cam_motion_timeout':
             log.debug("Event: Doorbell cam motion timeout")
         # RTSP events
-        elif self._waiting_rtsp_cb and msg['event'] == 'on_cam_recording_available':
+        #elif self._waiting_rtsp_cb and msg['event'] == 'on_cam_recording_available':
+        elif msg['event'] == 'on_cam_recording_available':
             self._waiting_rtsp_cb = False
-            self.telegram.send_message(self._baticasa_chat_id, f'Cam {msg["doorbell_cam"]}: New recording at {msg["fpath"]}, request it with send_rec',
+            self.telegram.send_message(self._baticasa_chat_id, f'Cam {msg["doorbell_cam"]}: New recording {msg["fname"]}, request with send_rec',
                                      disable_notifications=self._should_skip_push_notify())
         elif self._waiting_rtsp_cb and msg['event'] == 'on_cam_recording_reencoded':
             self._waiting_rtsp_cb = False
-            self.telegram.send_video(self._baticasa_chat_id, msg['fpath'], f'Recording {msg["original_fpath"]}',
+            self.telegram.send_video(self._baticasa_chat_id, msg['fpath'], f'Recording {msg["original_fname"]}',
                                      disable_notifications=self._should_skip_push_notify())
         elif self._waiting_rtsp_cb and msg['event'] == 'on_cam_recording_failed':
             self._waiting_rtsp_cb = False
-            self.telegram.send_message(self._baticasa_chat_id, f'Cam {msg["doorbell_cam"]}: An RTSP recording failed at {msg["fpath"]}',
+            self.telegram.send_message(self._baticasa_chat_id, f'Cam {msg["doorbell_cam"]}: An RTSP recording failed at {msg["fname"]}',
                                      disable_notifications=self._should_skip_push_notify())
         elif self._waiting_rtsp_cb and msg['event'] == 'on_cam_recording_reencoding_failed':
             self._waiting_rtsp_cb = False
-            self.telegram.send_message(self._baticasa_chat_id, f'Cam {msg["doorbell_cam"]}: Telegram encoding failed for recording {msg["original_fpath"]}',
+            self.telegram.send_message(self._baticasa_chat_id, f'Cam {msg["doorbell_cam"]}: Telegram encoding failed for recording {msg["original_fname"]}',
                                      disable_notifications=self._should_skip_push_notify())
 
         # Contact sensor events
