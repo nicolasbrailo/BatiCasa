@@ -63,11 +63,20 @@ class BatiCasaTelegramBot(TelegramLongpollBot):
         self.send_message(msg['chat']['id'], syslogcmd.stdout)
 
 
+class DummyTelegram:
+    def send_message(self, *a, **kv):
+        log.debug("Dummy Telegram skipped a send_message request")
+    def send_photo(self, *a, **kv):
+        log.debug("Dummy Telegram skipped a send_photo request")
+    def send_video(self, *a, **kv):
+        log.debug("Dummy Telegram skipped a send_video request")
+
+
 class NotificationDispatcher:
     def __init__(self, cfg, zmw, sonos, doorbell):
         self._sonos = sonos
         self._doorbell = doorbell
-        self._files_cache = cfg['telegram']['files_cache']
+        self._files_cache = cfg['files_cache']
         self._sound_asset_on_doorbell = cfg['misc']['sound_asset_on_doorbell']
 
         self._paused_notifications = set()
@@ -76,10 +85,11 @@ class NotificationDispatcher:
         self._scheduler.start()
 
         self._waiting_rtsp_cb = False
-        self.telegram = None
         if 'telegram' in cfg:
             self._baticasa_chat_id = cfg['telegram']['bcast_chat_id']
             self.telegram = BatiCasaTelegramBot(zmw, cfg)
+        else:
+            self.telegram = DummyTelegram()
         self.wa = None
         if 'whatsapp' in cfg:
             self.wa = WhatsApp(cfg['whatsapp'], test_mode=False)
