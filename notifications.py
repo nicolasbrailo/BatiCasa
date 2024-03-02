@@ -1,4 +1,5 @@
 from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime, time, timedelta
 import os
 import pathlib
 import subprocess
@@ -12,8 +13,6 @@ from zigbee2mqtt2web.mqtt_proxy import MqttProxy
 
 import logging
 log = logging.getLogger(__name__)
-
-from datetime import datetime, time, timedelta
 
 
 class BatiCasaTelegramBot(TelegramLongpollBot):
@@ -84,11 +83,14 @@ class NotificationDispatcher:
         self._scheduler = BackgroundScheduler()
         self._scheduler.start()
 
+        self._last_im_notification = None
+        self._im_notifications_throttle = timedelta(seconds=60)
         self._waiting_rtsp_cb = False
         if 'telegram' in cfg:
             self._baticasa_chat_id = cfg['telegram']['bcast_chat_id']
             self.telegram = BatiCasaTelegramBot(zmw, cfg)
         else:
+            self._baticasa_chat_id = 123
             self.telegram = DummyTelegram()
         self.wa = None
         if 'whatsapp' in cfg:
@@ -127,6 +129,13 @@ class NotificationDispatcher:
             if 'door_motion' in self._paused_notifications:
                 log.info('door_motion event triggered, but notifications are paused')
                 return
+
+            last_im = self._last_im_notification
+            self._last_im_notification = datetime.now()
+            if datetime.now() - last_im > self._im_notifications_throttle:
+                log.info('door_motion event triggered, but notifications are throttled')
+                return
+
             if self.telegram is not None:
                 self.telegram.send_photo(
                         self._baticasa_chat_id, msg['snap'], f"Motion level {msg['motion_level']} detected!",
@@ -142,8 +151,8 @@ class NotificationDispatcher:
         #elif self._waiting_rtsp_cb and msg['event'] == 'on_cam_recording_available':
         elif msg['event'] == 'on_cam_recording_available':
             self._waiting_rtsp_cb = False
-            self.telegram.send_message(self._baticasa_chat_id, f'Cam {msg["doorbell_cam"]}: New recording {msg["fname"]}, request with send_rec',
-                                     disable_notifications=self._should_skip_push_notify())
+            #self.telegram.send_message(self._baticasa_chat_id, f'Cam {msg["doorbell_cam"]}: New recording {msg["fname"]}, request with send_rec',
+            #                         disable_notifications=self._should_skip_push_notify())
         elif self._waiting_rtsp_cb and msg['event'] == 'on_cam_recording_reencoded':
             self._waiting_rtsp_cb = False
             self.telegram.send_video(self._baticasa_chat_id, msg['fpath'], f'Recording {msg["original_fname"]}',

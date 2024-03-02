@@ -43,6 +43,21 @@ log = logging.getLogger(__name__)
 MY_LATLON=(51.5464371,0.111148)
 
 
+from zigbee2mqtt2web_extras.phony import PhonyZMWThing
+class UIUserDefinedButtons(PhonyZMWThing):
+    def __init__(self, button_map):
+        self.name = "UIUserButtons"
+        self.description = "UI User defined buttons"
+        self.thing_type = "UI User defined buttons"
+        self._add_action("get", "Get user defined buttons", getter=self._get_udb)
+        self._button_map = button_map
+        for k,v in button_map.items():
+            self._add_action(k, v)
+
+    def _get_udb(self):
+        return self._button_map
+
+
 class App:
     def __init__(self, cfg):
         self._cfg = cfg
@@ -56,6 +71,9 @@ class App:
         self.zmw.webserver.add_url_rule('/svcs', self._baticasa_svc_idx)
         add_all_known_monkeypatches(self.zmw)
         self.reg = self.zmw.registry
+        self.reg.register(UIUserDefinedButtons({
+                '/svcs': 'Services',
+            }))
 
         scenes = SceneManager(self.zmw.registry)
         def skip_next_chime():
