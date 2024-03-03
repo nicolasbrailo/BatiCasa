@@ -25,6 +25,7 @@ from zigbee2mqtt2web import Zigbee2Mqtt2Web
 
 from notifications import NotificationDispatcher
 from crons import Cronenberg
+from nvr import Nvr
 
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
@@ -68,11 +69,17 @@ class App:
         self.sensors = SensorsHistory(cfg['sensor_db_path'], retention_rows, retention_days)
 
         self.zmw = Zigbee2Mqtt2Web(cfg, self.on_net_discovery)
+
         self.zmw.webserver.add_url_rule('/svcs', self._baticasa_svc_idx)
+        self.crons = Cronenberg(self.zmw, MY_LATLON)
+        self.nvr = Nvr(self._cfg['doorbell']['rec_path'], self.zmw.webserver)
+
         add_all_known_monkeypatches(self.zmw)
         self.reg = self.zmw.registry
+
         self.reg.register(UIUserDefinedButtons({
                 '/svcs': 'Services',
+                '/nvr/ls': 'Cams',
             }))
 
         scenes = SceneManager(self.zmw.registry)
@@ -111,7 +118,6 @@ class App:
             self.doorbell = ReolinkDoorbell(self._cfg['doorbell'], self.zmw)
 
         self.notifications = NotificationDispatcher(self._cfg, self.zmw, self.sonos, self.doorbell)
-        self.crons = Cronenberg(self.zmw, MY_LATLON)
 
         self.boton_cocina_click_state = 0
         self.zmw.start_and_block()
