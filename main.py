@@ -149,6 +149,7 @@ class App:
 
         self.boton_cocina_click_state = 0
         def boton_cocina_click(action):
+            self.main_door_monitor.stop_leaving_routine_if_active()
             if action == 'toggle':
                 global boton_cocina_click
                 group_on = any_light_on(reg, ['CocinaCeiling', 'CocinaCountertop', 'CocinaEntrada', 'EntradaColor', 'CocinaSofa'])
