@@ -20,7 +20,8 @@ class Cronenberg:
 
         self._scheduler.add_job(self._check_lights, trigger='cron', day_of_week='mon-fri', hour=9)
         # Schedule redshift everyday (or now, if we're restarting the app)
-        self._scheduler.add_job(self._refresh_redshift_crons, trigger='cron', hour=12, next_run_time=datetime.now())
+        self._scheduler.add_job(self._refresh_redshift_crons, trigger='cron', hour=6, next_run_time=datetime.now())
+        self.redshifting = False
 
     def _check_lights(self):
         lights = which_lights_are_on_in_the_house(self._zmw.registry)
@@ -37,8 +38,10 @@ class Cronenberg:
         })
 
     def _refresh_redshift_crons(self):
+        self.redshifting = False
         def _gen_step(pct):
             def _apply_step():
+                self.redshifting = True
                 log.info("Applying redshift step to %s percent", pct)
                 for light_name in self._redshift_lights:
                     thing = self._zmw.registry.get_thing(light_name)

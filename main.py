@@ -126,11 +126,13 @@ class App:
         def boton_comedor_click(action):
             if action == 'on_press':
                 reg.get_thing('Comedor').set_brightness_pct(100)
-                reg.get_thing('Comedor').set('color_temp', 250)
+                if not self.crons.redshifting:
+                    reg.get_thing('Comedor').set('color_temp', 250)
                 reg.get_thing('Snoopy').set_brightness_pct(100)
             if action == 'up_press':
                 reg.get_thing('Comedor').set_brightness_pct(60)
-                reg.get_thing('Comedor').set('color_temp', 370)
+                if not self.crons.redshifting:
+                    reg.get_thing('Comedor').set('color_temp', 370)
                 reg.get_thing('Snoopy').set_brightness_pct(60)
             if action == 'down_press':
                 reg.get_thing('Comedor').set_brightness_pct(30)
