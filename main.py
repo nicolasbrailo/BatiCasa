@@ -85,7 +85,7 @@ class App:
         scenes = SceneManager(self.zmw.registry)
         def skip_next_chime():
             self.main_door_monitor.skip_next_door_open_chime()
-        scenes.add_scene('Skip next door open chime', 'Skip next door open chime', skip_next_chime)
+        scenes.add_scene('Skip door chime', 'Skip door chime', skip_next_chime)
         def comer():
             self.reg.get_thing('CocinaCeiling').set_brightness_pct(60)
             self.reg.get_thing('CocinaCountertop').set_brightness_pct(80)
@@ -102,6 +102,22 @@ class App:
             self.reg.get_thing('CocinaSofa').set_brightness_pct(10)
             self.reg.broadcast_things(['CocinaCeiling', 'CocinaCountertop', 'CocinaEntrada', 'EntradaColor', 'CocinaSofa'])
         scenes.add_scene('Gezellig', 'Gezellig', gezellig)
+        def predormir():
+            self.reg.get_thing('CocinaCountertop').set_brightness_pct(0)
+            self.reg.get_thing('CocinaCeiling').set_brightness_pct(0)
+            self.reg.get_thing('CocinaEntrada').set_brightness_pct(0)
+            self.reg.get_thing('EntradaColor').set_brightness_pct(0)
+            self.reg.get_thing('CocinaSofa').set_brightness_pct(0)
+            self.reg.get_thing('Comedor').set_brightness_pct(5)
+            self.reg.get_thing('Comedor').set('color_temp', 454)
+            self.reg.get_thing('Snoopy').set_brightness_pct(30)
+            self.reg.get_thing('VeladorEmma').set_brightness_pct(25)
+            self.reg.get_thing('VeladorOlivia').set_brightness_pct(25)
+            self.reg.get_thing('Belador').set_brightness_pct(25)
+            self.reg.get_thing('NicoVelador').set_brightness_pct(25)
+            self.reg.broadcast_things(['CocinaCeiling', 'CocinaCountertop', 'CocinaEntrada', 'EntradaColor',
+                                       'CocinaSofa', 'Comedor', 'Snoopy', 'VeladorEmma', 'VeladorOlivia', 'NicoVelador', 'Belador'])
+        scenes.add_scene('a dormir', 'a dormir', predormir)
 
         if 'spotify' in self._cfg:
             spotify = Spotify(self._cfg['spotify'])

@@ -83,7 +83,7 @@ class NotificationDispatcher:
         self._scheduler = BackgroundScheduler()
         self._scheduler.start()
 
-        self._last_im_notification = None
+        self._last_im_notification = datetime.now()
         self._im_notifications_throttle = timedelta(seconds=60)
         self._waiting_rtsp_cb = False
         if 'telegram' in cfg:
