@@ -25,7 +25,6 @@ from zigbee2mqtt2web import Zigbee2Mqtt2Web
 
 from notifications import NotificationDispatcher
 from crons import Cronenberg
-from nvr import Nvr
 
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
@@ -72,14 +71,14 @@ class App:
 
         self.zmw.webserver.add_url_rule('/svcs', self._baticasa_svc_idx)
         self.crons = Cronenberg(self.zmw, MY_LATLON)
-        self.nvr = Nvr(self._cfg['doorbell']['rec_path'], self.zmw.webserver)
 
         add_all_known_monkeypatches(self.zmw)
         self.reg = self.zmw.registry
 
         self.reg.register(UIUserDefinedButtons({
                 '/svcs': 'Services',
-                '/nvr/ls': 'Cams',
+                #'/nvr/ls': 'Cams',
+                '/nvr/10.10.30.20/gallery/2/days': 'Cams',
             }))
 
         scenes = SceneManager(self.zmw.registry)
@@ -132,6 +131,11 @@ class App:
         self.doorbell = None
         if 'doorbell' in self._cfg:
             self.doorbell = ReolinkDoorbell(self._cfg['doorbell'], self.zmw)
+            self.zmw.webserver.add_url_rule('/nvr/ls', self.doorbell.nvr._list_cams)
+            self.zmw.webserver.add_url_rule('/nvr/<cam>/gallery', self.doorbell.nvr._list_cam_recs_as_gallery)
+            self.zmw.webserver.add_url_rule('/nvr/<cam>/gallery/<days>/days', self.doorbell.nvr._list_cam_recs_as_gallery_days)
+            self.zmw.webserver.add_url_rule('/nvr/<cam>/files', self.doorbell.nvr._list_cam_recs)
+            self.zmw.webserver.add_url_rule('/nvr/<cam>/get_recording/<file>', self.doorbell.nvr._get_recording)
 
         self.notifications = NotificationDispatcher(self._cfg, self.zmw, self.sonos, self.doorbell)
 
