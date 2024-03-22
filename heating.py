@@ -8,6 +8,9 @@ import sys
 sys.path.append(os.path.join(pathlib.Path(__file__).parent.resolve(), "zigbee2mqtt2web"))
 
 from zigbee2mqtt2web import Zigbee2MqttAction, Zigbee2MqttActionValue
+from zigbee2mqtt2web_extras.phony import PhonyZMWThing
+
+from schedule import Schedule
 
 log = logging.getLogger(__name__)
 
@@ -86,12 +89,48 @@ def _set_poweron_behaviour(zmw, thing):
     opts = ", ".join(thing.actions['power_on_behavior'].value.meta['values'])
     log.error("Can't set boiler %s power_on_behavior, don't know what option to choose. Options: %s", thing.name, opts)
 
-class Heating:
+
+class Heating(PhonyZMWThing):
+    def _print_stat_change(self, old, new):
+        log.info("%s %s", old, new)
+
     def __init__(self, zmw):
+        super().__init__(
+            name="Heating",
+            description="Heating controller",
+            thing_type="heating",
+        )
+
+        self.schedule = Schedule(self._print_stat_change)
+
+        self.actions = {}
+        class _GetSchedule:
+            def __init__(self, sched):
+                self.schedule = sched
+            def get(self):
+                return self.schedule.as_table()
+        self.actions['schedule'] = Zigbee2MqttAction(
+            name='schedule',
+            description='Get the schedule for the next 24 hours',
+            can_set=False,
+            can_get=True,
+            value=_GetSchedule(self.schedule))
+        class _Boost:
+            def __init__(self, sched):
+                self.schedule = sched
+            def set(self):
+                self.schedule.boost()
+        self.actions['boost'] = Zigbee2MqttAction(
+            name='boost',
+            description='Boost heating for a number of hours',
+            can_set=True,
+            can_get=False,
+            value=_Boost(self.schedule))
+
         self.zmw = zmw
         self.log_file = '/home/batman/BatiCasa/heating.log'
-        self.boiler_name = 'Boiler'
-        #self.boiler_name = 'Batioficina'
+        #self.boiler_name = 'Boiler'
+        self.boiler_name = 'Batioficina'
         self.boiler = None
 
         log_file = logging.FileHandler(self.log_file, mode='w')
@@ -100,7 +139,6 @@ class Heating:
         log.addHandler(log_file)
         log.info("BatiCasa heating manager starting...")
 
-        self.zmw.webserver.add_url_rule('/heating', self._www_idx)
         self.zmw.webserver.add_url_rule('/heating/log', self._www_log)
         self.zmw.webserver.add_url_rule('/heating/on_forever', self._www_on_forever)
         self.zmw.webserver.add_url_rule('/heating/force_off', self._www_force_off)
@@ -108,6 +146,9 @@ class Heating:
 
         self._scheduler = BackgroundScheduler()
         self._scheduler.start()
+
+    def get_json_state(self):
+        return {"schedule": self.schedule.as_table()}
 
     def _on_mqtt_net_discovery_cb(self):
         if self.boiler is not None:
@@ -140,27 +181,8 @@ class Heating:
             # Assign boiler only after all hacks applied - doing it before may break, as the thing won't have
             # the expected API
             self.boiler = boiler
+            self.zmw.registry.register(self)
         self._scheduler.add_job(func=_on_boiler_discovered, trigger="date", run_date=datetime.now() + timedelta(seconds=3))
-
-
-    def _www_idx(self):
-        hours = [[False] * 4] * 24
-        hours[10][0] = True
-        hours[10][1] = True
-        hours[10][2] = True
-        hours[20][2] = True
-        hours[16][2] = True
-        tbl = "<table style=''>"
-        for h in range(len(hours)):
-            tbl += "<tr>"
-            for q in range(len(hours[h])):
-                col = 'green' if hours[h][q] else 'white'
-                m = q * 15
-                t = f"{h:02}:{m:02}"
-                tbl += f"<td style='border: 1px solid black; background-color:{col}'>{t}</td>"
-            tbl += "</tr>"
-        tbl += "</table>"
-        return tbl
 
     def _www_log(self):
         try:

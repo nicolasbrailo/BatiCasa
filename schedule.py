@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from datetime import datetime
 import copy
 
@@ -8,6 +8,9 @@ class ScheduleSlot:
     minute: int
     should_be_on: bool = False
     reason: str = "Default"
+
+    def dictify(self):
+        return asdict(self)
 
     def different_from(self, o):
         return o is None or \
@@ -116,5 +119,4 @@ class Schedule:
             hr, mn = _slot_to_hour(j), _slot_to_minute(j)
             sched_map[f'{hr:02}:{mn:02}'] = self._sched[j]
         return sched_map
-
 

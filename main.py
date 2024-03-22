@@ -69,7 +69,7 @@ class App:
         self.sensors = SensorsHistory(cfg['sensor_db_path'], retention_rows, retention_days)
 
         self.zmw = Zigbee2Mqtt2Web(cfg, self.on_net_discovery)
-        #self.heating = Heating(self.zmw)
+        self.heating = Heating(self.zmw)
 
         self.zmw.webserver.add_url_rule('/svcs', self._baticasa_svc_idx)
         self.crons = Cronenberg(self.zmw, MY_LATLON)
