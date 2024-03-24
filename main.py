@@ -8,6 +8,7 @@ from flask import send_from_directory
 
 sys.path.append(os.path.join(pathlib.Path(__file__).parent.resolve(), "zigbee2mqtt2web"))
 
+from zigbee2mqtt2web_extras.heating import Heating
 from zigbee2mqtt2web_extras.light_helpers import any_light_on
 from zigbee2mqtt2web_extras.light_helpers import any_light_on_in_the_house
 from zigbee2mqtt2web_extras.light_helpers import light_group_toggle_brightness_pct
@@ -25,7 +26,6 @@ from zigbee2mqtt2web import Zigbee2Mqtt2Web
 
 from notifications import NotificationDispatcher
 from crons import Cronenberg
-from heating import Heating
 
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
@@ -80,7 +80,7 @@ class App:
         self.reg.register(UIUserDefinedButtons({
                 '/svcs': 'Services',
                 #'/nvr/ls': 'Cams',
-                '/heating': 'Heating',
+                '/www/heating.html': 'Heating',
                 '/nvr/10.10.30.20/gallery/2/days': 'Cams',
             }))
 
