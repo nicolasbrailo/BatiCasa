@@ -69,7 +69,10 @@ class App:
         self.sensors = SensorsHistory(cfg['sensor_db_path'], retention_rows, retention_days)
 
         self.zmw = Zigbee2Mqtt2Web(cfg, self.on_net_discovery)
-        self.heating = Heating(self.zmw)
+
+        self.heating = None
+        if 'heating' in cfg:
+            self.heating = Heating(cfg['heating'], self.zmw)
 
         self.zmw.webserver.add_url_rule('/svcs', self._baticasa_svc_idx)
         self.crons = Cronenberg(self.zmw, MY_LATLON)
@@ -173,6 +176,21 @@ class App:
                 reg.get_thing('Snoopy').set_brightness_pct(0)
             reg.broadcast_things(['Comedor', 'Snoopy'])
         self.install_cb('BotonComedor', 'action', boton_comedor_click)
+        def boton_comedor_alt_click(action):
+            if action == 'on':
+                # TODO Turn on light, based on time of day do redshift + bright change
+                reg.get_thing('Snoopy').set_brightness_pct(100)
+                reg.get_thing('Comedor').set_brightness_pct(100)
+                reg.get_thing('Comedor').set('color_temp', 454)
+                reg.broadcast_things(['Comedor', 'Snoopy'])
+            elif action == 'off':
+                reg.get_thing('Comedor').set_brightness_pct(0)
+                reg.get_thing('Snoopy').set_brightness_pct(0)
+                reg.broadcast_things(['Comedor', 'Snoopy'])
+            else:
+                log.info("HOLA %s", action)
+        self.install_cb('BotonComedorAlt', 'action', boton_comedor_alt_click)
+
 
 
         reg.register_and_shadow_mqtt_thing(

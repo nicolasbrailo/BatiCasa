@@ -197,8 +197,12 @@ class NotificationDispatcher:
         elif msg['event'] == 'on_forgot_lights_on_morning':
             self.telegram.send_message(self._baticasa_chat_id, f'Someone forgot lights on, will turn off: {msg["light_names"]}')
         elif msg['event'] == 'on_boiler_state_change':
-            boiler_state = "ON" if msg["should_be_on"] else "OFF"
-            msg = f'Heating is now {boiler_state}, reason: {msg["reason"]}'
+            if msg['new_request_on'] == msg['old_request_on']:
+                # The reason changed, but not the state (eg before it was off because user requested, now it's off because
+                # the temperature is high enough. Skip notifying.
+                return
+            boiler_state = "ON" if msg["new_request_on"] else "OFF"
+            msg = f'Heating is now {boiler_state}, reason: {msg["new_reason"]}'
             self.telegram.send_message(self._baticasa_chat_id, msg)
 
     def _on_telegram_cmd(self, msg):
