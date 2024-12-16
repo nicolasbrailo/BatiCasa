@@ -193,9 +193,17 @@ class NotificationDispatcher:
             log.info('Received Telegram command %s: %s', msg['cmd'], msg)
             self._on_telegram_cmd(msg)
 
-        # Misc events
+        # Cron events
         elif msg['event'] == 'on_forgot_lights_on_morning':
             self.telegram.send_message(self._baticasa_chat_id, f'Someone forgot lights on, will turn off: {msg["light_names"]}')
+        elif msg['event'] == 'vacation_mode_start':
+            self.telegram.send_message(self._baticasa_chat_id, f'Vacation mode: start schedule')
+        elif msg['event'] == 'vacation_mode_night':
+            self.telegram.send_message(self._baticasa_chat_id, f'Vacation mode: enter night schedule')
+        elif msg['event'] == 'vacation_mode_sleep':
+            self.telegram.send_message(self._baticasa_chat_id, f'Vacation mode: Baticasa going to sleep')
+
+        # Misc events
         elif msg['event'] == 'on_boiler_state_change':
             if msg['new_request_on'] == msg['old_request_on']:
                 # The reason changed, but not the state (eg before it was off because user requested, now it's off because

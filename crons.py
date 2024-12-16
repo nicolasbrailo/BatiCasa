@@ -18,6 +18,9 @@ class Cronenberg:
 
         self._redshift_lights = ['Comedor']
 
+        self._scheduler.add_job(self._vacation_mode_start, trigger='cron', day_of_week='mon-sun', hour=18, minute=8)
+        self._scheduler.add_job(self._vacation_mode_night, trigger='cron', day_of_week='mon-sun', hour=21, minute=34)
+        self._scheduler.add_job(self._vacation_mode_sleep, trigger='cron', day_of_week='mon-sun', hour=22, minute=16)
         self._scheduler.add_job(self._check_lights, trigger='cron', day_of_week='mon-fri', hour=9)
         # Schedule redshift everyday (or now, if we're restarting the app)
         self._scheduler.add_job(self._refresh_redshift_crons, trigger='cron', hour=6, next_run_time=datetime.now())
@@ -57,4 +60,20 @@ class Cronenberg:
                func=_gen_step(pct),
                trigger="date",
                run_date=step_t)
+
+    def _vacation_mode_start(self):
+        self._zmw.get_thing('SceneManager').actions['Gezellig'].apply_scene()
+        self._zmw.announce_system_event({
+            'event': 'vacation_mode_start',
+        })
+    def _vacation_mode_night(self):
+        self._zmw.get_thing('SceneManager').actions['a dormir'].apply_scene()
+        self._zmw.announce_system_event({
+            'event': 'vacation_mode_night',
+        })
+    def _vacation_mode_sleep(self):
+        self._zmw.get_thing('SceneManager').actions['World off'].apply_scene()
+        self._zmw.announce_system_event({
+            'event': 'vacation_mode_sleep',
+        })
 
