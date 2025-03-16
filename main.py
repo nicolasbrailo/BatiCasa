@@ -84,7 +84,7 @@ class App:
                 '/svcs': 'Services',
                 #'/nvr/ls': 'Cams',
                 '/www/heating.html': 'Heating',
-                '/nvr/10.10.30.20/gallery/2/days': 'Cams',
+                '/nvr/10.0.0.20/gallery/2/days': 'Cams',
             }))
 
         scenes = SceneManager(self.zmw.registry)
@@ -92,10 +92,10 @@ class App:
             self.main_door_monitor.skip_next_door_open_chime()
         scenes.add_scene('Skip door chime', 'Skip door chime', skip_next_chime)
         def comer():
-            self.reg.get_thing('CocinaCeiling').set_brightness_pct(60)
+            self.reg.get_thing('CocinaCeiling').set_brightness_pct(70)
             self.reg.get_thing('CocinaCountertop').set_brightness_pct(80)
-            self.reg.get_thing('CocinaEntrada').set_brightness_pct(20)
-            self.reg.get_thing('EntradaColor').set_brightness_pct(50)
+            self.reg.get_thing('CocinaEntrada').set_brightness_pct(50)
+            self.reg.get_thing('EntradaColor').set_brightness_pct(90)
             self.reg.get_thing('CocinaSofa').set_brightness_pct(30)
             self.reg.broadcast_things(['CocinaCeiling', 'CocinaCountertop', 'CocinaEntrada', 'EntradaColor', 'CocinaSofa'])
         scenes.add_scene('Comer', 'Comer', comer)
