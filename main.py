@@ -75,7 +75,7 @@ class App:
             self.heating = Heating(cfg['heating'], self.zmw)
 
         self.zmw.webserver.add_url_rule('/svcs', self._baticasa_svc_idx)
-        self.crons = Cronenberg(self.zmw, MY_LATLON, scenes)
+        self.crons = Cronenberg(self.zmw, MY_LATLON)
 
         add_all_known_monkeypatches(self.zmw)
         self.reg = self.zmw.registry

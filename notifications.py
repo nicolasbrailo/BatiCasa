@@ -101,6 +101,20 @@ class NotificationDispatcher:
         #self._mqtt.start()
         zmw.subscribe_to_system_events(self._on_message)
 
+        self.telegram_on_system_error = None
+        if 'telegram_on_system_error' in cfg:
+            self.telegram_on_system_error = cfg['telegram_on_system_error']
+            class TelegramOnErr(logging.Handler):
+                # Only handle ERROR and above
+                def __init__(self, notif):
+                    super().__init__(level=logging.ERROR)
+                    self.notif = notif
+                def emit(self, record):
+                    self.notif._on_system_error(self.format(record))
+            logging.getLogger().addHandler(TelegramOnErr(self))
+
+    def _on_system_error(self, msg):
+        self.telegram.send_message(self._baticasa_chat_id, f'System error: {msg}')
 
     def _should_skip_push_notify(self):
         current_time = datetime.now().time()
