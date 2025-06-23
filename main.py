@@ -176,20 +176,6 @@ class App:
                 reg.get_thing('Snoopy').set_brightness_pct(0)
             reg.broadcast_things(['Comedor', 'Snoopy'])
         self.install_cb('BotonComedor', 'action', boton_comedor_click)
-        def boton_comedor_alt_click(action):
-            if action == 'on':
-                # TODO Turn on light, based on time of day do redshift + bright change
-                reg.get_thing('Snoopy').set_brightness_pct(100)
-                reg.get_thing('Comedor').set_brightness_pct(100)
-                reg.get_thing('Comedor').set('color_temp', 454)
-                reg.broadcast_things(['Comedor', 'Snoopy'])
-            elif action == 'off':
-                reg.get_thing('Comedor').set_brightness_pct(0)
-                reg.get_thing('Snoopy').set_brightness_pct(0)
-                reg.broadcast_things(['Comedor', 'Snoopy'])
-            else:
-                log.info("HOLA %s", action)
-        self.install_cb('BotonComedorAlt', 'action', boton_comedor_alt_click)
 
 
 
@@ -246,12 +232,84 @@ class App:
                 reg.broadcast_thing(lamp)
         self.install_cb('BotonBelador', 'action', boton_belador_click)
 
-        def boton_olma_click(action):
+        self.boton_olivia_click_num = 0
+        self.boton_olivia_click_off_num = 0
+        def boton_olivia_click(action):
             if action == 'on':
-                light_group_toggle_brightness_pct(reg, [('VeladorEmma', 80), ])
+                lamp = reg.get_thing('VeladorOlivia')
+                self.boton_olivia_click_num += 1
+                if self.boton_olivia_click_num == 1:
+                    lamp.set_brightness_pct(100)
+                    lamp.actions['color_rgb'].set_value('DEDED6')
+                elif self.boton_olivia_click_num == 2:
+                    lamp.set_brightness_pct(10)
+                    lamp.actions['color_rgb'].set_value('F07529')
+                else:
+                    self.boton_olivia_click_num = 0
+                    # Set color to step zero, otherwise on switch-on it will start white and fade to orange
+                    lamp.actions['color_rgb'].set_value('DEDED6')
+                    lamp.set_brightness_pct(0)
+                lamp.set('transition', 2)
+                reg.broadcast_thing(lamp)
+                lamp.set('transition', 0)
+
             if action == 'off':
-                light_group_toggle_brightness_pct(reg, [('VeladorOlivia', 80), ])
-        self.install_cb('BotonOlma', 'action', boton_olma_click)
+                lamp = reg.get_thing('OliviaFloorlamp')
+                self.boton_olivia_click_off_num += 1
+                if self.boton_olivia_click_off_num == 1:
+                    lamp.set_brightness_pct(50)
+                elif self.boton_olivia_click_off_num == 2:
+                    lamp.set_brightness_pct(100)
+                else:
+                    self.boton_olivia_click_off_num = 0
+                    lamp.set_brightness_pct(0)
+                lamp.set('transition', 2)
+                reg.broadcast_thing(lamp)
+                lamp.set('transition', 0)
+        self.install_cb('BotonOlivia', 'action', boton_olivia_click)
+
+        self.boton_emma_click_num = 0
+        self.boton_emma_click_off_num = 0
+        def boton_emma_click(action):
+            if action == 'on':
+                lamp = reg.get_thing('VeladorEmma')
+                self.boton_emma_click_num += 1
+                if self.boton_emma_click_num == 1:
+                    lamp.set_brightness_pct(100)
+                    lamp.actions['color_rgb'].set_value('DEDED6')
+                elif self.boton_emma_click_num == 2:
+                    lamp.set_brightness_pct(10)
+                    lamp.actions['color_rgb'].set_value('F07529')
+                else:
+                    self.boton_emma_click_num = 0
+                    # Set color to step zero, otherwise on switch-on it will start white and fade to orange
+                    lamp.actions['color_rgb'].set_value('DEDED6')
+                    lamp.set_brightness_pct(0)
+                lamp.set('transition', 2)
+                reg.broadcast_thing(lamp)
+                lamp.set('transition', 0)
+
+            if action == 'off':
+                lamp = reg.get_thing('EmmaFloorlamp')
+                lamp2 = reg.get_thing('EmmaTriangleLamp')
+                self.boton_emma_click_off_num += 1
+                if self.boton_emma_click_off_num == 1:
+                    lamp.set_brightness_pct(50)
+                    lamp2.set_brightness_pct(50)
+                elif self.boton_emma_click_off_num == 2:
+                    lamp.set_brightness_pct(100)
+                    lamp2.set_brightness_pct(100)
+                else:
+                    self.boton_emma_click_off_num = 0
+                    lamp.set_brightness_pct(0)
+                    lamp2.set_brightness_pct(0)
+                lamp.set('transition', 2)
+                lamp2.set('transition', 2)
+                reg.broadcast_thing(lamp)
+                reg.broadcast_thing(lamp2)
+                lamp.set('transition', 0)
+                lamp2.set('transition', 0)
+        self.install_cb('BotonEmma', 'action', boton_emma_click)
 
         def boton_batiloft_click(action):
             light_group_toggle_brightness_pct(reg, [('NicoVelador', 40), ('Belador', 60), ])
