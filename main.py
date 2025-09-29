@@ -4,6 +4,7 @@ import os
 import pathlib
 import sys
 import time
+from logging.handlers import TimedRotatingFileHandler
 from flask import send_from_directory
 
 sys.path.append(os.path.join(pathlib.Path(__file__).parent.resolve(), "zigbee2mqtt2web"))
@@ -35,7 +36,7 @@ handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s -
 root.addHandler(handler)
 
 #fh = logging.FileHandler('/home/batman/BatiCasa/current.log', mode='w')
-fh = logging.TimedRotatingFileHandler('/home/batman/BatiCasa/current.log', when='midnight', backupCount=3)
+fh = TimedRotatingFileHandler('/home/batman/BatiCasa/current.log', when='midnight', backupCount=3)
 fh.setLevel(logging.DEBUG)
 fh.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 root.addHandler(fh)
