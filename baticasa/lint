@@ -1,0 +1,10 @@
+
+************* Module baticasa_buttons
+baticasa_buttons.py:17:0: C0115: Missing class docstring (missing-class-docstring)
+baticasa_buttons.py:27:4: C0103: Method name "_scene_TV_scene" doesn't conform to snake_case naming style (invalid-name)
+baticasa_buttons.py:50:4: C0103: Method name "_scene_Cocina_gezellig" doesn't conform to snake_case naming style (invalid-name)
+baticasa_buttons.py:62:4: C0103: Method name "_scene_World_off" doesn't conform to snake_case naming style (invalid-name)
+
+-----------------------------------
+Your code has been rated at 9.77/10
+
