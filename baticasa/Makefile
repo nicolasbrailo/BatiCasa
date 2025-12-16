@@ -7,6 +7,10 @@ devrun:
 install_svc:
 	../zigbee2mqtt2web/scripts/install_svc.sh .
 
+.PHONY: rebuild_ui
+rebuild_ui:
+	../zigbee2mqtt2web/zzmw_lib/www/babel_compile_single.sh ./www/app.js ./www/app.rel.js
+
 rebuild_deps:
 	rm -f Pipfile Pipfile.lock
 	pipenv --rm || true
