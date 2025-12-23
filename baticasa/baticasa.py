@@ -1,7 +1,9 @@
 import os
 import pathlib
 
-from zzmw_lib.service_runner import service_runner_with_www
+from apscheduler.triggers.cron import CronTrigger
+
+from zzmw_lib.service_runner import service_runner
 from zzmw_lib.logs import build_logger
 from zz2m.button_action_service import ButtonActionService
 from zz2m.light_helpers import (
@@ -13,18 +15,37 @@ from zz2m.light_helpers import (
 log = build_logger("Baticasa")
 
 class Baticasa(ButtonActionService):
-    def __init__(self, cfg, www):
+    def __init__(self, cfg, www, sched):
         www_path = os.path.join(pathlib.Path(__file__).parent.resolve(), 'www')
-        super().__init__(cfg, www, www_path)
+        super().__init__(cfg, www, www_path, sched)
         self._cocina_btn_heladera_action_idx = 0
         self.boton_olivia_click_num = 0
         self.boton_olivia_click_off_num = 0
         self.boton_emma_click_num = 0
         self.boton_emma_click_off_num = 0
 
-    def _scene_Test(self):
-        self._z2m.get_thing('CocinaMesa').toggle()
-        self._z2m.broadcast_things(['CocinaMesa'])
+        www.serve_url('/arbolito_on', self._arbolito_on)
+        www.serve_url('/arbolito_off', self._arbolito_off)
+
+        sched.add_job(
+            self._arbolito_on,
+            CronTrigger(hour=16, minute=0)
+        )
+        sched.add_job(
+            self._arbolito_off,
+            CronTrigger(hour=22, minute=0)
+        )
+
+    def _arbolito_on(self):
+        log.info("Arbolito ON")
+        self._z2m.get_thing('Arbolito').set('state', True)
+        self._z2m.broadcast_thing('Arbolito')
+        return "ON"
+    def _arbolito_off(self):
+        log.info("Arbolito OFF")
+        self._z2m.get_thing('Arbolito').set('state', False)
+        self._z2m.broadcast_thing('Arbolito')
+        return "OFF"
 
     def _scene_TV_scene(self):
         self._z2m.get_thing('CocinaCeiling').turn_off()
@@ -229,4 +250,4 @@ class Baticasa(ButtonActionService):
             light_group_toggle_brightness_pct(self._z2m, [('EntradaColor', 100)])
 
 
-service_runner_with_www(Baticasa)
+service_runner(Baticasa)
