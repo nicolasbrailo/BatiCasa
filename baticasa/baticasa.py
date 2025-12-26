@@ -9,6 +9,7 @@ from zz2m.button_action_service import ButtonActionService
 from zz2m.light_helpers import (
     any_light_on,
     light_group_toggle_brightness_pct,
+    toggle_ensure_color,
     turn_all_lights_off
 )
 
@@ -17,7 +18,7 @@ log = build_logger("Baticasa")
 class Baticasa(ButtonActionService):
     def __init__(self, cfg, www, sched):
         www_path = os.path.join(pathlib.Path(__file__).parent.resolve(), 'www')
-        super().__init__(cfg, www, www_path, sched)
+        super().__init__(cfg, www, www_path, sched, svc_deps=["ZmwSonosCtrl", "ZmwSpotify", "ZmwSpeakerAnnounce"])
         self._cocina_btn_heladera_action_idx = 0
         self.boton_olivia_click_num = 0
         self.boton_olivia_click_off_num = 0
@@ -35,6 +36,12 @@ class Baticasa(ButtonActionService):
             self._arbolito_off,
             CronTrigger(hour=22, minute=0)
         )
+
+    # Don't support any messages, ignore all replies
+    def on_service_received_message(self, subtopic, payload):
+        pass
+    def on_dep_published_message(self, svc_name, subtopic, payload):
+        pass
 
     def _arbolito_on(self):
         log.info("Arbolito ON")
@@ -85,18 +92,26 @@ class Baticasa(ButtonActionService):
     def _scene_World_off(self):
         turn_all_lights_off(self._z2m, transition_secs=3)
 
-    def _z2m_cb_BaticuartoWorldOffBtn_action(self, _action):  # pylint: disable=invalid-name
-        turn_all_lights_off(self._z2m, transition_secs=3)
+    def _z2m_cb_BatiOficinaBtn_action(self, action):  # pylint: disable=invalid-name
+        lamp = self._z2m.get_thing('BatiOficinaColor')
+        lamp.set('transition', 1)
+        if action == 'on':
+            toggle_ensure_color(lamp, 'FB1CFF')
+        if action == 'off':
+            toggle_ensure_color(lamp, 'FFEA79')
+        self._z2m.broadcast_thing(lamp)
 
     def _z2m_cb_BaticuartoBeladorBtn_action(self, action):  # pylint: disable=invalid-name
         lamp = self._z2m.get_thing('BaticuartoBelador')
-        lamp.set_brightness_pct(0 if lamp.is_light_on() else 100)
-        lamp.toggle()
+        lamp.set('transition', 1)
         if action == 'on':
-            lamp.actions['color_rgb'].set_value('FB1CFF')
+            toggle_ensure_color(lamp, 'FB1CFF')
         if action == 'off':
-            lamp.actions['color_rgb'].set_value('FFFFFF')
+            toggle_ensure_color(lamp, 'FFEA79')
         self._z2m.broadcast_thing(lamp)
+
+    def _z2m_cb_BaticuartoWorldOffBtn_action(self, _action):  # pylint: disable=invalid-name
+        turn_all_lights_off(self._z2m, transition_secs=3)
 
     def _z2m_cb_EmmaBtn_action(self, action):  # pylint: disable=invalid-name
         if action == 'on':
@@ -194,6 +209,27 @@ class Baticasa(ButtonActionService):
             self._z2m.get_thing('TVRoomFloorlampRight').turn_off()
             self._z2m.get_thing('TVRoomSnoopy').turn_off()
         self._z2m.broadcast_things(['TVRoomFloorlampLeft', 'TVRoomFloorlampRight', 'TVRoomSnoopy'])
+
+    def _z2m_cb_CocinaMediaCtrlBtn_action(self, action):  # pylint: disable=invalid-name
+        if action == 'toggle':
+            log.info("Rquest Spotify Hijack")
+            self.message_svc("ZmwSonosCtrl", "spotify_hijack_or_toggle_play", {
+                "BatiDiscos": {"vol": 60},
+                "BatiPatio": {"vol": 17},
+                "Baticocina": {"vol": 14},
+            })
+        if action == 'brightness_up_click':
+            log.info("Request Sonos Volume up")
+            self.message_svc("ZmwSonosCtrl", "volume_up", {})
+        if action == 'brightness_down_click':
+            log.info("Request Sonos Volume down")
+            self.message_svc("ZmwSonosCtrl", "volume_down", {})
+        if action == 'arrow_right_click':
+            log.info("Request Spotify next track")
+            self.message_svc("ZmwSonosCtrl", "next_track", {})
+        if action == 'arrow_left_click':
+            log.info("Request Spotify prev track")
+            self.message_svc("ZmwSonosCtrl", "prev_track", {})
 
     def _z2m_cb_CocinaBtnHeladera_action(self, action):  # pylint: disable=invalid-name
         if action == 'toggle':
