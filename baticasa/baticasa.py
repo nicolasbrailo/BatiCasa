@@ -96,7 +96,7 @@ class Baticasa(ButtonActionService):
         lamp = self._z2m.get_thing('BatiOficinaColor')
         lamp.set('transition', 1)
         if action == 'on':
-            toggle_ensure_color(lamp, 'FB1CFF')
+            toggle_ensure_color(lamp, 'FFA9A9')
         if action == 'off':
             toggle_ensure_color(lamp, 'FFEA79')
         self._z2m.broadcast_thing(lamp)
@@ -105,7 +105,7 @@ class Baticasa(ButtonActionService):
         lamp = self._z2m.get_thing('BaticuartoBelador')
         lamp.set('transition', 1)
         if action == 'on':
-            toggle_ensure_color(lamp, 'FB1CFF')
+            toggle_ensure_color(lamp, 'FFA9A9')
         if action == 'off':
             toggle_ensure_color(lamp, 'FFEA79')
         self._z2m.broadcast_thing(lamp)
