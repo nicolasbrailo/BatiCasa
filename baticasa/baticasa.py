@@ -45,16 +45,16 @@ class Baticasa(ButtonActionService):
 
     def _arbolito_on(self):
         log.info("Arbolito ON")
-        self._z2m.get_thing('Arbolito').set('state', True)
-        self._z2m.broadcast_thing('Arbolito')
+        self._z2m.get_thing('TVRoomArbolito').set('state', True)
+        self._z2m.broadcast_thing('TVRoomArbolito')
         return "ON"
     def _arbolito_off(self):
         log.info("Arbolito OFF")
-        self._z2m.get_thing('Arbolito').set('state', False)
-        self._z2m.broadcast_thing('Arbolito')
+        self._z2m.get_thing('TVRoomArbolito').set('state', False)
+        self._z2m.broadcast_thing('TVRoomArbolito')
         return "OFF"
 
-    def _scene_TV_scene(self):
+    def _scene_TVRoomTele_Night(self):
         self._z2m.get_thing('CocinaCeiling').turn_off()
         self._z2m.get_thing('CocinaCountertop').turn_off()
         self._z2m.get_thing('CocinaFloorlamp').turn_off()
@@ -77,7 +77,29 @@ class Baticasa(ButtonActionService):
             'EmmaVelador', 'OliviaVelador',
         ])
 
-    def _scene_Cocina_gezellig(self):
+    def _scene_TVRoomPlay(self):
+        self._z2m.get_thing('TVRoomFloorlampLeft').set_brightness_pct(5)
+        self._z2m.get_thing('TVRoomFloorlampLeft').set('color_temp', 454)
+        self._z2m.get_thing('TVRoomFloorlampRight').set_brightness_pct(5)
+        self._z2m.get_thing('TVRoomFloorlampRight').set('color_temp', 454)
+        self._z2m.get_thing('TVRoomSnoopy').set_brightness_pct(30)
+        self._z2m.broadcast_things([
+            'TVRoomFloorlampLeft', 'TVRoomFloorlampRight', 'TVRoomSnoopy',
+        ])
+
+    def _scene_CocinaComer(self):
+        self._z2m.get_thing('CocinaCeiling').set_brightness_pct(80)
+        self._z2m.get_thing('CocinaSink').set_brightness_pct(90)
+        self._z2m.get_thing('CocinaCountertop').set_brightness_pct(90)
+        self._z2m.get_thing('EntradaCeiling').set_brightness_pct(50)
+        self._z2m.get_thing('EntradaColor').set_brightness_pct(100)
+        self._z2m.get_thing('CocinaFloorlamp').set_brightness_pct(30)
+        self._z2m.broadcast_things([
+            'CocinaCeiling', 'CocinaSink', 'CocinaCountertop',
+            'EntradaCeiling', 'EntradaColor', 'CocinaFloorlamp'
+        ])
+
+    def _scene_CocinaGezellig(self):
         self._z2m.get_thing('CocinaCeiling').set_brightness_pct(25)
         self._z2m.get_thing('CocinaSink').set_brightness_pct(70)
         self._z2m.get_thing('CocinaCountertop').set_brightness_pct(70)
@@ -89,7 +111,12 @@ class Baticasa(ButtonActionService):
             'EntradaCeiling', 'EntradaColor', 'CocinaFloorlamp'
         ])
 
-    def _scene_World_off(self):
+    def _scene_OliviaA_Dormir(self):
+        self._z2m.get_thing('OliviaVelador').set_brightness_pct(15)
+        self._z2m.get_thing('OliviaSonoslamp').turn_off()
+        self._z2m.get_thing('OliviaFloorlamp').turn_off()
+
+    def _scene_WorldOff(self):
         turn_all_lights_off(self._z2m, transition_secs=3)
 
     def _z2m_cb_BatiOficinaBtn_action(self, action):  # pylint: disable=invalid-name
@@ -108,7 +135,12 @@ class Baticasa(ButtonActionService):
             toggle_ensure_color(lamp, 'FFA9A9')
         if action == 'off':
             toggle_ensure_color(lamp, 'FFEA79')
-        self._z2m.broadcast_thing(lamp)
+
+        lamp2 = self._z2m.get_thing('BaticuartoNicoVelador')
+        lamp2.set('transition', 1)
+        lamp2.set('state', lamp.is_light_on())
+        lamp.set_brightness_pct(60 if lamp.is_light_on() else 0)
+        self._z2m.broadcast_things([lamp, lamp2])
 
     def _z2m_cb_BaticuartoWorldOffBtn_action(self, _action):  # pylint: disable=invalid-name
         turn_all_lights_off(self._z2m, transition_secs=3)
