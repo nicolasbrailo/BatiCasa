@@ -7,6 +7,8 @@ devrun:
 install_svc:
 	../zigbee2mqtt2web/scripts/install_svc.sh .
 
+test:
+
 .PHONY: rebuild_ui
 rebuild_ui:
 	../zigbee2mqtt2web/zzmw_lib/www/babel_compile_single.sh ./www/app.js ./www/app.rel.js
@@ -15,6 +17,7 @@ rebuild_deps:
 	rm -f Pipfile Pipfile.lock
 	pipenv --rm || true
 	pipenv --python python3
+	pipenv install soco
 	pipenv install -e "$(shell readlink -f "$(PWD)/../zigbee2mqtt2web/zz2m")"
 	pipenv install -e "$(shell readlink -f "$(PWD)/../zigbee2mqtt2web/zzmw_lib")"
 

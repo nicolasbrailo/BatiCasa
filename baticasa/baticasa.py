@@ -2,6 +2,7 @@ import os
 import pathlib
 
 from apscheduler.triggers.cron import CronTrigger
+import soco
 
 from zzmw_lib.service_runner import service_runner
 from zzmw_lib.logs import build_logger
@@ -14,6 +15,22 @@ from zz2m.light_helpers import (
 )
 
 log = build_logger("Baticasa")
+
+def set_sub_gain(wanted_sub_name, gain):
+    speakers = soco.discover(timeout=3)
+    if not speakers:
+        log.warn("No Sonos speakers found")
+        return
+    sub = [spk for spk in speakers if spk.player_name == wanted_sub_name]
+    if len(sub) == 0:
+        log.warn("No speaker '%s' found", wanted_sub_name)
+        return
+    speaker = sub[0]
+    if not speaker.sub_enabled:
+        log.warn("Speaker '%s' has no sub attached", wanted_sub_name)
+        return
+    speaker.sub_gain = gain
+    log.info("Adjusted gain of '%s' to %s", wanted_sub_name, gain)
 
 class Baticasa(ButtonActionService):
     def __init__(self, cfg, www, sched):
@@ -77,6 +94,8 @@ class Baticasa(ButtonActionService):
             'EmmaVelador', 'OliviaVelador',
         ])
 
+        set_sub_gain('TV Room', -4)
+
     def _scene_TVRoomPlay(self):
         self._z2m.get_thing('TVRoomFloorlampLeft').set_brightness_pct(5)
         self._z2m.get_thing('TVRoomFloorlampLeft').set('color_temp', 454)
@@ -86,6 +105,11 @@ class Baticasa(ButtonActionService):
         self._z2m.broadcast_things([
             'TVRoomFloorlampLeft', 'TVRoomFloorlampRight', 'TVRoomSnoopy',
         ])
+
+        set_sub_gain('TV Room', +6)
+
+    def _scene_TVRoomSubIsTooLoud(self):
+        set_sub_gain('TV Room', -6)
 
     def _scene_CocinaComer(self):
         self._z2m.get_thing('CocinaCeiling').set_brightness_pct(80)
