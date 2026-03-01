@@ -18,7 +18,6 @@ rebuild_deps:
 	pipenv --rm || true
 	pipenv --python python3
 	pipenv install soco
-	pipenv install -e "$(shell readlink -f "$(PWD)/../zigbee2mqtt2web/zz2m")"
-	pipenv install -e "$(shell readlink -f "$(PWD)/../zigbee2mqtt2web/zzmw_lib")"
+	pipenv install -e "$(shell readlink -f "$(PWD)/../zigbee2mqtt2web/zzmw_lib")[z2m]"
 
 

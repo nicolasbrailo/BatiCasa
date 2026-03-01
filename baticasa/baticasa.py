@@ -6,8 +6,8 @@ import soco
 
 from zzmw_lib.service_runner import service_runner
 from zzmw_lib.logs import build_logger
-from zz2m.button_action_service import ButtonActionService
-from zz2m.light_helpers import (
+from zzmw_lib.z2m.button_action_service import ButtonActionService
+from zzmw_lib.z2m.light_helpers import (
     any_light_on,
     light_group_toggle_brightness_pct,
     toggle_ensure_color,
@@ -42,34 +42,11 @@ class Baticasa(ButtonActionService):
         self.boton_emma_click_num = 0
         self.boton_emma_click_off_num = 0
 
-        www.serve_url('/arbolito_on', self._arbolito_on)
-        www.serve_url('/arbolito_off', self._arbolito_off)
-
-        sched.add_job(
-            self._arbolito_on,
-            CronTrigger(hour=16, minute=0)
-        )
-        sched.add_job(
-            self._arbolito_off,
-            CronTrigger(hour=22, minute=0)
-        )
-
     # Don't support any messages, ignore all replies
     def on_service_received_message(self, subtopic, payload):
         pass
     def on_dep_published_message(self, svc_name, subtopic, payload):
         pass
-
-    def _arbolito_on(self):
-        log.info("Arbolito ON")
-        self._z2m.get_thing('TVRoomArbolito').set('state', True)
-        self._z2m.broadcast_thing('TVRoomArbolito')
-        return "ON"
-    def _arbolito_off(self):
-        log.info("Arbolito OFF")
-        self._z2m.get_thing('TVRoomArbolito').set('state', False)
-        self._z2m.broadcast_thing('TVRoomArbolito')
-        return "OFF"
 
     def _scene_TVRoomTele_Night(self):
         self._z2m.get_thing('CocinaCeiling').turn_off()
@@ -106,7 +83,7 @@ class Baticasa(ButtonActionService):
             'TVRoomFloorlampLeft', 'TVRoomFloorlampRight', 'TVRoomSnoopy',
         ])
 
-        set_sub_gain('TV Room', +6)
+        set_sub_gain('TV Room', +4)
 
     def _scene_TVRoomSubIsTooLoud(self):
         set_sub_gain('TV Room', -6)
