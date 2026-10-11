@@ -120,8 +120,8 @@ class Baticasa(ButtonActionService):
     def _scene_WorldOff(self):
         turn_all_lights_off(self._z2m, transition_secs=3)
 
-    def _z2m_cb_BatiOficinaBtn_action(self, action):  # pylint: disable=invalid-name
-        lamp = self._z2m.get_thing('BatiOficinaColor')
+    def _z2m_cb_BatioficinaBtn_action(self, action):  # pylint: disable=invalid-name
+        lamp = self._z2m.get_thing('BatioficinaColor')
         lamp.set('transition', 1)
         if action == 'on':
             toggle_ensure_color(lamp, 'FFA9A9')
@@ -165,7 +165,7 @@ class Baticasa(ButtonActionService):
             self._z2m.broadcast_thing(lamp)
 
         if action == 'off':
-            lamp1 = self._z2m.get_thing('EmmaFloorlampColor')
+            lamp1 = self._z2m.get_thing('EmmaFloorlamp')
             lamp2 = self._z2m.get_thing('EmmaTriangleLamp')
             self.boton_emma_click_off_num += 1
             if self.boton_emma_click_off_num == 1:
