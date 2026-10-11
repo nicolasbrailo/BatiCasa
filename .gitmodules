@@ -1,3 +1,6 @@
 [submodule "zigbee2mqtt2web"]
 	path = zigbee2mqtt2web
 	url = git@github.com:nicolasbrailo/zigbee2mqtt2web.git
+[submodule "matter2mqtt"]
+	path = matter2mqtt
+	url = git@github.com:nicolasbrailo/matter2mqtt.git
