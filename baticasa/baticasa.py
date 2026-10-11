@@ -121,13 +121,18 @@ class Baticasa(ButtonActionService):
         turn_all_lights_off(self._z2m, transition_secs=3)
 
     def _z2m_cb_BatioficinaBtn_action(self, action):  # pylint: disable=invalid-name
-        lamp = self._z2m.get_thing('BatioficinaColor')
-        lamp.set('transition', 1)
+        lamp1 = self._z2m.get_thing('BatioficinaColor')
+        lamp2 = self._z2m.get_thing('BatioficinaWall')
+        lamp1.set('transition', 1)
+        lamp2.set('transition', 1)
         if action == 'on':
-            toggle_ensure_color(lamp, 'FFA9A9')
+            toggle_ensure_color(lamp1, 'FFA9A9')
+            toggle_ensure_color(lamp2, 'FFA9A9')
         if action == 'off':
-            toggle_ensure_color(lamp, 'FFEA79')
-        self._z2m.broadcast_thing(lamp)
+            toggle_ensure_color(lamp1, 'FFEA79')
+            toggle_ensure_color(lamp2, 'FFEA79')
+        lamp2.set_brightness_pct(40 if lamp2.is_light_on() else 0)
+        self._z2m.broadcast_things([lamp1, lamp2])
 
     def _z2m_cb_BaticuartoBeladorBtn_action(self, action):  # pylint: disable=invalid-name
         lamp = self._z2m.get_thing('BaticuartoBelador')
