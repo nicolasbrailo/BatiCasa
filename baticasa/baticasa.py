@@ -146,6 +146,12 @@ class Baticasa(ButtonActionService):
     def _z2m_cb_BaticuartoWorldOffBtn_action(self, _action):  # pylint: disable=invalid-name
         turn_all_lights_off(self._z2m, transition_secs=3)
 
+    def _z2m_cb_BaticuartoEscaleraBtn_action_1(self, action):  # pylint: disable=invalid-name
+        self._z2m_cb_BaticuartoBeladorBtn_action('on')
+
+    def _z2m_cb_BaticuartoEscaleraBtn_action_2(self, action):  # pylint: disable=invalid-name
+        self._z2m_cb_TVRoomBtn_action('up_press')
+
     def _z2m_cb_EmmaBtn_action(self, action):  # pylint: disable=invalid-name
         if action == 'on':
             lamp = self._z2m.get_thing('EmmaVelador')
