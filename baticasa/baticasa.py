@@ -72,6 +72,7 @@ class Baticasa(ButtonActionService):
         ])
 
         set_sub_gain('TV Room', -4)
+        self.message_svc("ZmwSpotify", "stop", {})
 
     def _scene_TVRoomPlay(self):
         self._z2m.get_thing('TVRoomFloorlampLeft').set_brightness_pct(5)
