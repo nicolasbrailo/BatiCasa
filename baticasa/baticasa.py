@@ -71,8 +71,8 @@ class Baticasa(ButtonActionService):
             'EmmaVelador', 'OliviaVelador',
         ])
 
-        set_sub_gain('TV Room', -4)
-        self.message_svc("ZmwSonosCtrl", "pause", {"speakers": ["BatiDiscos", "BatiPatio", "Baticocina"]})
+        set_sub_gain('TVRoom', -4)
+        self.message_svc("ZmwSonosCtrl", "pause", {"speakers": ["CocinaDiscos", "CocinaPatio", "CocinaCocina"]})
 
     def _scene_TVRoomPlay(self):
         self._z2m.get_thing('TVRoomFloorlampLeft').set_brightness_pct(5)
@@ -84,10 +84,10 @@ class Baticasa(ButtonActionService):
             'TVRoomFloorlampLeft', 'TVRoomFloorlampRight', 'TVRoomSnoopy',
         ])
 
-        set_sub_gain('TV Room', +4)
+        set_sub_gain('TVRoom', +4)
 
     def _scene_TVRoomSubIsTooLoud(self):
-        set_sub_gain('TV Room', -6)
+        set_sub_gain('TVRoom', -6)
 
     def _scene_CocinaComer(self):
         self._z2m.get_thing('CocinaCeiling').set_brightness_pct(80)
@@ -259,9 +259,9 @@ class Baticasa(ButtonActionService):
         if action == 'toggle':
             log.info("Rquest Spotify Hijack")
             self.message_svc("ZmwSonosCtrl", "spotify_hijack_or_toggle_play", {
-                "BatiDiscos": {"vol": 60},
-                "BatiPatio": {"vol": 17},
-                "Baticocina": {"vol": 14},
+                "CocinaDiscos": {"vol": 60},
+                "CocinaPatio": {"vol": 17},
+                "Cocinacocina": {"vol": 14},
             })
         if action == 'brightness_up_click':
             log.info("Request Sonos Volume up")
